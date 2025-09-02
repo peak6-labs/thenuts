@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Nuts - Poker Training Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .help-btn, .new-game-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .help-btn:hover, .new-game-btn:hover {
+            background: #2980b9;
+        }
+
+        .help-btn {
+            width: 35px;
+            height: 35px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border-radius: 50%;
+        }
+
+        .timer-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e74c3c;
+            min-width: 65px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .score-display {
+            font-size: 16px;
+            color: #27ae60;
+            margin-left: 15px;
+        }
+
+        .cards-area {
+            margin-bottom: 25px;
+        }
+
+        .section-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cards {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            width: 70px;
+            height: 100px;
+            border: 2px solid #2c3e50;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card.red {
+            color: #e74c3c;
+        }
+
+        .card.black {
+            color: #2c3e50;
+        }
+
+        .card-rank {
+            font-size: 28px;
+        }
+
+        .card-suit {
+            font-size: 24px;
+            margin-top: 5px;
+        }
+
+        .choices {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .choice-btn {
+            padding: 15px;
+            border: 2px solid #3498db;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .choice-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .choice-btn.correct {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+
+        .choice-btn.incorrect {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+
+        .choice-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .modal-body {
+            line-height: 1.6;
+            color: #34495e;
+        }
+
+        .modal-body h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .modal-body ul {
+            margin-left: 20px;
+        }
+
+        .game-over {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .game-over h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .game-over p {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        .share-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 5px;
+            transition: background 0.3s;
+        }
+
+        .share-btn:hover {
+            background: #229954;
+        }
+
+        .copied-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 2000;
+        }
+
+        .copied-toast.show {
+            opacity: 1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 15px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .title {
+                font-size: 24px;
+            }
+
+            .controls {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .timer-display {
+                font-size: 18px;
+                min-width: 60px;
+            }
+
+            .score-display {
+                font-size: 14px;
+            }
+
+            .card {
+                width: 60px;
+                height: 85px;
+            }
+
+            .card-rank {
+                font-size: 24px;
+            }
+
+            .card-suit {
+                font-size: 20px;
+            }
+
+            .choices {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <!-- Load pokersolver library from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/pokersolver@2.1.4/pokersolver.min.js"></script>
+</head>
+<body>
+    <div class="game-container">
+        <div id="loading" class="loading">Loading poker library...</div>
+        
+        <div id="game-content" style="display: none;">
+            <div class="header">
+                <h1 class="title">Find The Nuts!</h1>
+                <div class="controls">
+                    <div class="timer-display" id="countdown">60s</div>
+                    <div class="score-display">Correct: <span id="score">0</span></div>
+                    <button class="help-btn" onclick="showHelp()">?</button>
+                    <button class="new-game-btn" onclick="startNewGame()">New Game</button>
+                </div>
+            </div>
+
+            <div class="cards-area">
+                <div class="section-label">Community Cards</div>
+                <div class="cards" id="community-cards"></div>
+            </div>
+
+            <div class="section-label">What is the nuts? (The best possible hand ANY player could have)</div>
+            <div class="choices" id="choices"></div>
+
+            <div id="game-over" class="game-over" style="display: none;">
+                <h2>Time's Up!</h2>
+                <p id="result-message"></p>
+                <div>
+                    <button class="share-btn" onclick="shareResults()">Share Results</button>
+                    <button class="new-game-btn" onclick="startNewGame()">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="copied-toast" class="copied-toast">Results copied to clipboard!</div>
+
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">How to Play</h2>
+                <button class="close-btn" onclick="closeHelp()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>What is "The Nuts"?</h3>
+                <p>In poker, "the nuts" refers to the best possible hand that can be made given the community cards on the board. It's the unbeatable hand at that moment.</p>
+                
+                <p><strong>IMPORTANT:</strong> The nuts is NOT necessarily the hand YOU have with your hole cards. It's the best hand that ANY player could theoretically have. Your hole cards are shown for reference, but you need to imagine what the best possible hole cards would be!</p>
+                
+                <h3>How to Identify The Nuts:</h3>
+                <ul>
+                    <li>Look at all 5 community cards</li>
+                    <li>Imagine what 2 hole cards would make the strongest possible hand</li>
+                    <li>Ignore YOUR actual hole cards - think theoretically</li>
+                    <li>Consider all possibilities: straight flushes, four of a kind, full houses, etc.</li>
+                </ul>
+                
+                <h3>Example:</h3>
+                <p>If the board shows: 10♣ 10♠ 3♥ K♣ 8♥<br>
+                The nuts would be Four 10s (if someone has 10♥ 10♦)<br>
+                Even if YOU only have a pair of 3s!</p>
+
+                <h3>Hand Rankings (from best to worst):</h3>
+                <ol>
+                    <li><strong>Royal Flush</strong> - A, K, Q, J, 10 all same suit</li>
+                    <li><strong>Straight Flush</strong> - Five cards in sequence, same suit</li>
+                    <li><strong>Four of a Kind</strong> - Four cards of same rank</li>
+                    <li><strong>Full House</strong> - Three of a kind + pair</li>
+                    <li><strong>Flush</strong> - Five cards of same suit</li>
+                    <li><strong>Straight</strong> - Five cards in sequence</li>
+                    <li><strong>Three of a Kind</strong> - Three cards of same rank</li>
+                    <li><strong>Two Pair</strong> - Two different pairs</li>
+                    <li><strong>One Pair</strong> - Two cards of same rank</li>
+                    <li><strong>High Card</strong> - Highest single card</li>
+                </ol>
+
+                <h3>Game Objective:</h3>
+                <p>You have 60 seconds to correctly identify as many nuts as possible! Each correct answer adds to your score. The game uses seeded randomness based on the current hour (UTC), so everyone playing during the same hour gets the exact same sequence of hands - compete with friends for the high score!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wait for pokersolver to load
+        window.addEventListener('load', function() {
+            if (typeof Hand !== 'undefined') {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('game-content').style.display = 'block';
+                initializeGame();
+            } else {
+                document.getElementById('loading').textContent = 'Error loading poker library. Please refresh the page.';
+            }
+        });
+
+        // Game state
+        let gameStartTime = null;
+        let countdownInterval = null;
+        let currentAnswer = null;
+        let score = 0;
+        let gameActive = false;
+        let roundActive = false;
+        let seedRandom = null;
+        let seedCounter = 0;
+        let preGeneratedScenarios = [];
+        let currentScenarioIndex = 0;
+        let totalHandsPlayed = 0;
+        // Hand will be available globally from pokersolver
+
+        // Card representations
+        const suits = ['♠', '♥', '♦', '♣'];
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+        class Card {
+            constructor(rank, suit) {
+                this.rank = rank;
+                this.suit = suit;
+            }
+
+            isRed() {
+                return this.suit === '♥' || this.suit === '♦';
+            }
+
+            // Convert to pokersolver format (e.g., "As", "Td", "7h")
+            toPokerSolverString() {
+                const rankMap = {
+                    '10': 'T',
+                    'J': 'J',
+                    'Q': 'Q',
+                    'K': 'K',
+                    'A': 'A'
+                };
+                const suitMap = {
+                    '♠': 's',
+                    '♥': 'h',
+                    '♦': 'd',
+                    '♣': 'c'
+                };
+                const psRank = rankMap[this.rank] || this.rank;
+                const psSuit = suitMap[this.suit];
+                return psRank + psSuit;
+            }
+        }
+
+        class Deck {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.cards = [];
+                for (let suit of suits) {
+                    for (let rank of ranks) {
+                        this.cards.push(new Card(rank, suit));
+                    }
+                }
+                this.shuffle();
+            }
+
+            shuffle() {
+                for (let i = this.cards.length - 1; i > 0; i--) {
+                    const j = Math.floor(seededRandom() * (i + 1));
+                    [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+                }
+            }
+
+            draw(n = 1) {
+                const drawn = [];
+                for (let i = 0; i < n; i++) {
+                    if (this.cards.length > 0) {
+                        drawn.push(this.cards.pop());
+                    }
+                }
+                return drawn;
+            }
+        }
+
+        // Seeded random number generator
+        function mulberry32(a) {
+            return function() {
+                let t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        function seededRandom() {
+            if (seedRandom) {
+                return seedRandom();
+            }
+            return Math.random();
+        }
+
+        function getDailySeed() {
+            // Use current date (UTC) to hour precision for seed
+            // This gives everyone the same seed for each hour
+            const now = new Date();
+            const seed = now.getUTCFullYear() * 10000000 + 
+                        (now.getUTCMonth() + 1) * 100000 + 
+                        now.getUTCDate() * 1000 + 
+                        now.getUTCHours();
+            return seed;
+        }
+
+        function initializeGame() {
+            // Hand is already available as a global from pokersolver
+            document.querySelector('.new-game-btn').onclick = startNewGame;
+            startNewGame();
+        }
+
+        // Convert cards array to pokersolver format
+        function cardsToPokerSolverArray(cards) {
+            return cards.map(card => card.toPokerSolverString());
+        }
+
+        // Format pokersolver hand description for display
+        function formatHandDescription(description) {
+            // pokersolver returns descriptions like "Four of a Kind, A's"
+            // We'll clean these up for consistent display
+            // Just remove apostrophes, pokersolver already formats nicely
+            return description.replace(/'/g, '');
+        }
+
+        // Find the absolute nuts using pokersolver
+        function findTheNuts(communityCards) {
+            const communityStrings = cardsToPokerSolverArray(communityCards);
+            
+            // Generate all remaining cards not on the board
+            const remainingCards = [];
+            for (let suit of suits) {
+                for (let rank of ranks) {
+                    const card = new Card(rank, suit);
+                    if (!communityCards.some(cc => cc.rank === card.rank && cc.suit === card.suit)) {
+                        remainingCards.push(card);
+                    }
+                }
+            }
+            
+            let bestHand = null;
+            let bestRank = -1;
+            
+            // Check all possible hole card combinations
+            for (let i = 0; i < remainingCards.length - 1; i++) {
+                for (let j = i + 1; j < remainingCards.length; j++) {
+                    const holeCards = [remainingCards[i], remainingCards[j]];
+                    const allCardStrings = [
+                        ...communityStrings,
+                        ...cardsToPokerSolverArray(holeCards)
+                    ];
+                    
+                    // PokerSolver.Hand.solve automatically finds the best 5-card hand from 7 cards
+                    const hand = Hand.solve(allCardStrings);
+                    
+                    // Use pokersolver's compare method for proper comparison including kickers
+                    if (!bestHand || hand.rank > bestRank || (hand.rank === bestRank && hand.compare(bestHand) === 1)) {
+                        bestHand = hand;
+                        bestRank = hand.rank;
+                    }
+                }
+            }
+            
+            return formatHandDescription(bestHand.descr);
+        }
+
+        // Find player's best hand
+        function findPlayerBestHand(communityCards, holeCards) {
+            const allCardStrings = [
+                ...cardsToPokerSolverArray(communityCards),
+                ...cardsToPokerSolverArray(holeCards)
+            ];
+            
+            const hand = Hand.solve(allCardStrings);
+            return formatHandDescription(hand.descr);
+        }
+
+        // Generate possible hands for wrong answers
+        function generatePossibleHands(communityCards) {
+            const possibleHands = new Set();
+            const deck = new Deck();
+            
+            // Remove community cards from deck
+            deck.cards = deck.cards.filter(card => 
+                !communityCards.some(cc => cc.rank === card.rank && cc.suit === card.suit)
+            );
+            
+            // Sample random hole card combinations
+            for (let attempt = 0; attempt < 30; attempt++) {
+                const i = Math.floor(seededRandom() * deck.cards.length);
+                let j = Math.floor(seededRandom() * deck.cards.length);
+                while (j === i) {
+                    j = Math.floor(seededRandom() * deck.cards.length);
+                }
+                
+                const sampleHoleCards = [deck.cards[i], deck.cards[j]];
+                const allCardStrings = [
+                    ...cardsToPokerSolverArray(communityCards),
+                    ...cardsToPokerSolverArray(sampleHoleCards)
+                ];
+                
+                const hand = Hand.solve(allCardStrings);
+                possibleHands.add(formatHandDescription(hand.descr));
+            }
+            
+            return Array.from(possibleHands);
+        }
+
+        function generateScenario() {
+            const deck = new Deck();
+            const communityCards = deck.draw(5);
+            
+            // Find the absolute nuts
+            const theNuts = findTheNuts(communityCards);
+            
+            // Generate choices
+            const choices = new Set();
+            choices.add(theNuts);
+            
+            // Generate other possible hands
+            const possibleHands = generatePossibleHands(communityCards);
+            for (let hand of possibleHands) {
+                if (choices.size >= 4) break;
+                if (!choices.has(hand)) {
+                    choices.add(hand);
+                }
+            }
+            
+            // If we still need more choices, add the board play
+            const boardOnly = Hand.solve(cardsToPokerSolverArray(communityCards));
+            choices.add(formatHandDescription(boardOnly.descr));
+            
+            // Ensure we have 4 choices
+            const choicesArray = Array.from(choices).slice(0, 4);
+            
+            // Shuffle choices
+            for (let i = choicesArray.length - 1; i > 0; i--) {
+                const j = Math.floor(seededRandom() * (i + 1));
+                [choicesArray[i], choicesArray[j]] = [choicesArray[j], choicesArray[i]];
+            }
+            
+            return {
+                communityCards,
+                choices: choicesArray,
+                answer: theNuts
+            };
+        }
+
+        function renderCard(card, container) {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `card ${card.isRed() ? 'red' : 'black'}`;
+            cardDiv.innerHTML = `
+                <div class="card-rank">${card.rank}</div>
+                <div class="card-suit">${card.suit}</div>
+            `;
+            container.appendChild(cardDiv);
+        }
+
+        function renderCards(cards, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            cards.forEach(card => renderCard(card, container));
+        }
+
+        function renderChoices(choices) {
+            const container = document.getElementById('choices');
+            container.innerHTML = '';
+            
+            choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.className = 'choice-btn';
+                button.textContent = choice;
+                button.onclick = () => selectAnswer(choice);
+                container.appendChild(button);
+            });
+        }
+
+        function startCountdown() {
+            gameStartTime = Date.now();
+            countdownInterval = setInterval(updateCountdown, 100);
+        }
+
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function updateCountdown() {
+            if (gameStartTime) {
+                const elapsed = (Date.now() - gameStartTime) / 1000;
+                const remaining = Math.max(0, 60 - elapsed);
+                document.getElementById('countdown').textContent = remaining.toFixed(1) + 's';
+                
+                if (remaining <= 0) {
+                    endGame();
+                }
+            }
+        }
+
+        function selectAnswer(choice) {
+            if (!roundActive || !gameActive) return;
+            
+            roundActive = false;
+            totalHandsPlayed++;
+            
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === currentAnswer) {
+                    btn.classList.add('correct');
+                } else if (btn.textContent === choice && choice !== currentAnswer) {
+                    btn.classList.add('incorrect');
+                }
+            });
+            
+            if (choice === currentAnswer) {
+                score++;
+                document.getElementById('score').textContent = score;
+            }
+            
+            // Auto-advance to next round after a short delay
+            setTimeout(() => {
+                if (gameActive) {
+                    nextRound();
+                }
+            }, 1000);
+        }
+
+        function preGenerateScenarios(count) {
+            preGeneratedScenarios = [];
+            for (let i = 0; i < count; i++) {
+                preGeneratedScenarios.push(generateScenario());
+            }
+        }
+
+        function nextRound() {
+            if (!gameActive) return;
+            
+            roundActive = true;
+            
+            // Clear previous round's button states
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('correct', 'incorrect');
+                btn.disabled = false;
+            });
+            
+            // Use pre-generated scenarios
+            if (currentScenarioIndex >= preGeneratedScenarios.length) {
+                // Generate more scenarios if we run out
+                preGenerateScenarios(20);
+                currentScenarioIndex = 0;
+            }
+            
+            const scenario = preGeneratedScenarios[currentScenarioIndex++];
+            currentAnswer = scenario.answer;
+            
+            renderCards(scenario.communityCards, 'community-cards');
+            renderChoices(scenario.choices);
+        }
+
+        function startNewGame() {
+            // Reset game state
+            score = 0;
+            totalHandsPlayed = 0;
+            document.getElementById('score').textContent = score;
+            document.getElementById('game-over').style.display = 'none';
+            
+            // Initialize seeded random with current hour's seed
+            const seed = getDailySeed();
+            seedRandom = mulberry32(seed);
+            
+            // Pre-generate scenarios for consistent gameplay
+            currentScenarioIndex = 0;
+            preGenerateScenarios(50); // Generate enough for the whole minute
+            
+            // Start the game
+            gameActive = true;
+            startCountdown();
+            nextRound();
+        }
+
+        function endGame() {
+            gameActive = false;
+            roundActive = false;
+            stopCountdown();
+            
+            const resultDiv = document.getElementById('game-over');
+            const resultMessage = document.getElementById('result-message');
+            
+            const winPercentage = totalHandsPlayed > 0 ? Math.round((score / totalHandsPlayed) * 100) : 0;
+            
+            resultMessage.innerHTML = `<strong>Final Score: ${score}/${totalHandsPlayed} (${winPercentage}%)</strong><br>
+                                      Everyone playing this hour gets the same sequence of hands.<br>
+                                      Share your score and compete with friends!`;
+            
+            resultDiv.style.display = 'block';
+            
+            // Disable all choice buttons
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+
+        function getTimeWindow() {
+            const now = new Date();
+            const currentHour = now.getUTCHours();
+            const nextHour = (currentHour + 1) % 24;
+            
+            const formatHour = (h) => {
+                const period = h >= 12 ? 'PM' : 'AM';
+                const hour12 = h === 0 ? 12 : (h > 12 ? h - 12 : h);
+                return `${hour12}${period}`;
+            };
+            
+            return `${formatHour(currentHour)}-${formatHour(nextHour)} UTC`;
+        }
+
+        function shareResults() {
+            const winPercentage = totalHandsPlayed > 0 ? Math.round((score / totalHandsPlayed) * 100) : 0;
+            const timeWindow = getTimeWindow();
+            
+            // Create bar chart visualization
+            const maxBars = 10;
+            const barsToFill = Math.round((score / Math.max(totalHandsPlayed, 1)) * maxBars);
+            const barChart = '🟩'.repeat(barsToFill) + '⬜'.repeat(maxBars - barsToFill);
+            
+            const shareText = `🃏 The Nuts - Poker Challenge\n` +
+                            `${timeWindow}\n\n` +
+                            `${barChart}\n` +
+                            `${score}/${totalHandsPlayed} hands (${winPercentage}%)\n\n` +
+                            `Can you beat my score?\n` +
+                            `Play at: ${window.location.href}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareText).then(() => {
+                // Show toast notification
+                const toast = document.getElementById('copied-toast');
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = shareText;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Show toast
+                const toast = document.getElementById('copied-toast');
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            });
+        }
+
+        function showHelp() {
+            document.getElementById('help-modal').classList.add('active');
+        }
+
+        function closeHelp() {
+            document.getElementById('help-modal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('help-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeHelp();
+            }
+        });
+    </script>
+</body>
+</html>
