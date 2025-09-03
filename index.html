@@ -449,8 +449,10 @@
                 <div class="cards" id="community-cards"></div>
             </div>
 
-            <div class="section-label">What is the nuts? (The best possible hand ANY player could have)</div>
-            <div class="choices" id="choices"></div>
+            <div class="choices-area" id="choices-area">
+                <div class="section-label">What is the nuts? (The best possible hand ANY player could have)</div>
+                <div class="choices" id="choices"></div>
+            </div>
 
             <div id="game-over" class="game-over" style="display: none;">
                 <h2>Time's Up!</h2>
@@ -905,8 +907,7 @@
             
             // Show the cards and choices areas again
             document.querySelector('.cards-area').style.display = 'block';
-            document.querySelector('.section-label:last-of-type').style.display = 'block';
-            document.getElementById('choices').style.display = 'grid';
+            document.getElementById('choices-area').style.display = 'block';
             
             // Initialize seeded random with current hour's seed
             const seed = getDailySeed();
@@ -940,8 +941,7 @@
             
             // Hide the cards and choices areas to avoid scrolling on mobile
             document.querySelector('.cards-area').style.display = 'none';
-            document.querySelector('.section-label:last-of-type').style.display = 'none';
-            document.getElementById('choices').style.display = 'none';
+            document.getElementById('choices-area').style.display = 'none';
             
             // Disable all choice buttons
             const buttons = document.querySelectorAll('.choice-btn');
