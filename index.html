@@ -903,6 +903,11 @@
             document.getElementById('score').textContent = score;
             document.getElementById('game-over').style.display = 'none';
             
+            // Show the cards and choices areas again
+            document.querySelector('.cards-area').style.display = 'block';
+            document.querySelector('.section-label:last-of-type').style.display = 'block';
+            document.getElementById('choices').style.display = 'grid';
+            
             // Initialize seeded random with current hour's seed
             const seed = getDailySeed();
             seedRandom = mulberry32(seed);
@@ -932,6 +937,11 @@
                                       Share your score and compete with friends!`;
             
             resultDiv.style.display = 'block';
+            
+            // Hide the cards and choices areas to avoid scrolling on mobile
+            document.querySelector('.cards-area').style.display = 'none';
+            document.querySelector('.section-label:last-of-type').style.display = 'none';
+            document.getElementById('choices').style.display = 'none';
             
             // Disable all choice buttons
             const buttons = document.querySelectorAll('.choice-btn');
