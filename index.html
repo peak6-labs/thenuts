@@ -998,6 +998,31 @@
             cards.forEach(card => renderCard(card, container));
         }
 
+        function formatHandForDisplay(handDescription) {
+            // Convert card notation to symbols
+            // Only replace when it's actually a card notation (capital letter followed by lowercase suit)
+            // Use word boundaries to avoid replacing in the middle of words
+            let formatted = handDescription
+                // Replace card notations with symbols - must be preceded by space, comma, or start of string
+                .replace(/(^|[, ])([2-9TJQKA]|10)s\b/g, '$1$2♠')  // Spades
+                .replace(/(^|[, ])([2-9TJQKA]|10)h\b/g, '$1$2♥')  // Hearts  
+                .replace(/(^|[, ])([2-9TJQKA]|10)d\b/g, '$1$2♦')  // Diamonds
+                .replace(/(^|[, ])([2-9TJQKA]|10)c\b/g, '$1$2♣')  // Clubs
+                // Handle "High" format (e.g., "Ah High")
+                .replace(/\b([2-9TJQKA])h High/g, '$1♥ High')  // Hearts in "High" context
+                .replace(/\b([2-9TJQKA])s High/g, '$1♠ High')  // Spades in "High" context
+                .replace(/\b([2-9TJQKA])d High/g, '$1♦ High')  // Diamonds in "High" context
+                .replace(/\b([2-9TJQKA])c High/g, '$1♣ High');  // Clubs in "High" context
+            
+            // Replace T with 10 only when it's a card
+            formatted = formatted.replace(/\bT([♠♥♦♣])/g, '10$1');
+            
+            // Handle apostrophes in descriptions like "K's" -> "Ks"
+            formatted = formatted.replace(/([2-9TJQKA10])['']s\b/g, '$1s');
+            
+            return formatted;
+        }
+        
         function renderChoices(choices) {
             const container = document.getElementById('choices');
             container.innerHTML = '';
@@ -1005,7 +1030,7 @@
             choices.forEach(choice => {
                 const button = document.createElement('button');
                 button.className = 'choice-btn';
-                button.textContent = choice;
+                button.innerHTML = formatHandForDisplay(choice);
                 button.onclick = (e) => {
                     e.preventDefault();
                     e.target.blur(); // Immediately blur on click
