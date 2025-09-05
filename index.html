@@ -1092,7 +1092,7 @@
             let rejectCount = 0;
             const rejectedTypes = {}; // Track rejections by type
             
-            console.log('Starting scenario generation for', count, 'hands');
+            // console.log('Starting scenario generation for', count, 'hands');
             
             while (preGeneratedScenarios.length < count && attempts < MAX_ATTEMPTS) {
                 attempts++;
@@ -1113,7 +1113,7 @@
                 if (handTypeCounts[handType] < MAX_PER_TYPE) {
                     handTypeCounts[handType]++;
                     preGeneratedScenarios.push(scenario);
-                    console.log(`✓ Added ${handType} (${handTypeCounts[handType]}/3). Total: ${preGeneratedScenarios.length}/${count}`);
+                    // Removed individual logging to reduce clutter
                 } else {
                     // Track rejections silently
                     rejectCount++;
