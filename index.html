@@ -437,7 +437,7 @@
             <div class="header">
                 <h1 class="title">Find The Nuts!</h1>
                 <div class="controls">
-                    <div class="timer-display" id="countdown">60s</div>
+                    <div class="timer-display" id="countdown">60.0s (0/15)</div>
                     <div class="score-display">Correct: <span id="score">0</span></div>
                     <button class="help-btn" onclick="showHelp()">?</button>
                     <button class="new-game-btn" onclick="startNewGame()">New Game</button>
@@ -455,7 +455,7 @@
             </div>
 
             <div id="game-over" class="game-over" style="display: none;">
-                <h2>Time's Up!</h2>
+                <h2>Game Over!</h2>
                 <p id="result-message"></p>
                 <div>
                     <button class="share-btn" onclick="shareResults()">Share Results</button>
@@ -507,7 +507,7 @@
                 </ol>
 
                 <h3>Game Objective:</h3>
-                <p>You have 60 seconds to correctly identify as many nuts as possible! Each correct answer adds to your score. The game uses seeded randomness based on the current hour (UTC), so everyone playing during the same hour gets the exact same sequence of hands - compete with friends for the high score!</p>
+                <p>You have 60 seconds or 15 hands (whichever comes first) to correctly identify as many nuts as possible! Each correct answer adds to your score. The game uses seeded randomness based on the current hour (UTC), so everyone playing during the same hour gets the exact same sequence of hands - compete with friends for the high score!</p>
             </div>
         </div>
     </div>
@@ -536,6 +536,7 @@
         let preGeneratedScenarios = [];
         let currentScenarioIndex = 0;
         let totalHandsPlayed = 0;
+        const MAX_HANDS = 15;
         // Hand will be available globally from pokersolver
 
         // Card representations
@@ -825,7 +826,7 @@
             if (gameStartTime) {
                 const elapsed = (Date.now() - gameStartTime) / 1000;
                 const remaining = Math.max(0, 60 - elapsed);
-                document.getElementById('countdown').textContent = remaining.toFixed(1) + 's';
+                document.getElementById('countdown').textContent = `${remaining.toFixed(1)}s (${totalHandsPlayed}/${MAX_HANDS})`;
                 
                 if (remaining <= 0) {
                     endGame();
@@ -856,12 +857,22 @@
                 document.getElementById('score').textContent = score;
             }
             
-            // Auto-advance to next round after a short delay
-            setTimeout(() => {
-                if (gameActive) {
-                    nextRound();
-                }
-            }, 1000);
+            // Update the display to show hands played
+            updateCountdown();
+            
+            // Check if game should end (hit max hands)
+            if (totalHandsPlayed >= MAX_HANDS) {
+                setTimeout(() => {
+                    endGame();
+                }, 1500);
+            } else {
+                // Auto-advance to next round after a short delay
+                setTimeout(() => {
+                    if (gameActive) {
+                        nextRound();
+                    }
+                }, 1000);
+            }
         }
 
         function preGenerateScenarios(count) {
@@ -915,7 +926,7 @@
             
             // Pre-generate scenarios for consistent gameplay
             currentScenarioIndex = 0;
-            preGenerateScenarios(50); // Generate enough for the whole minute
+            preGenerateScenarios(MAX_HANDS); // Generate exactly the number we need
             
             // Start the game
             gameActive = true;
@@ -931,9 +942,9 @@
             const resultDiv = document.getElementById('game-over');
             const resultMessage = document.getElementById('result-message');
             
-            const winPercentage = totalHandsPlayed > 0 ? Math.round((score / totalHandsPlayed) * 100) : 0;
+            const winPercentage = Math.round((score / MAX_HANDS) * 100);
             
-            resultMessage.innerHTML = `<strong>Final Score: ${score}/${totalHandsPlayed} (${winPercentage}%)</strong><br>
+            resultMessage.innerHTML = `<strong>Final Score: ${score}/${MAX_HANDS} (${winPercentage}%)</strong><br>
                                       Everyone playing this hour gets the same sequence of hands.<br>
                                       Share your score and compete with friends!`;
             
@@ -965,18 +976,18 @@
         }
 
         function shareResults() {
-            const winPercentage = totalHandsPlayed > 0 ? Math.round((score / totalHandsPlayed) * 100) : 0;
+            const winPercentage = Math.round((score / MAX_HANDS) * 100);
             const timeWindow = getTimeWindow();
             
             // Create bar chart visualization
             const maxBars = 10;
-            const barsToFill = Math.round((score / Math.max(totalHandsPlayed, 1)) * maxBars);
+            const barsToFill = Math.round((score / MAX_HANDS) * maxBars);
             const barChart = '🟩'.repeat(barsToFill) + '⬜'.repeat(maxBars - barsToFill);
             
             const shareText = `🃏 The Nuts - Poker Challenge\n` +
                             `${timeWindow}\n\n` +
                             `${barChart}\n` +
-                            `${score}/${totalHandsPlayed} hands (${winPercentage}%)\n\n` +
+                            `${score}/${MAX_HANDS} hands (${winPercentage}%)\n\n` +
                             `Can you beat my score?\n` +
                             `Play at: ${window.location.href}`;
             
