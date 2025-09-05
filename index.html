@@ -219,6 +219,32 @@
             cursor: not-allowed;
             opacity: 0.7;
         }
+        
+        /* Color card symbols in buttons */
+        .choice-btn .card-heart,
+        .choice-btn .card-diamond {
+            color: #dc3545;
+        }
+        
+        .choice-btn .card-spade,
+        .choice-btn .card-club {
+            color: #212529;
+        }
+        
+        /* Keep colors visible when button is selected */
+        .choice-btn.correct .card-heart,
+        .choice-btn.correct .card-diamond,
+        .choice-btn.incorrect .card-heart,
+        .choice-btn.incorrect .card-diamond {
+            color: #ffcdd2;
+        }
+        
+        .choice-btn.correct .card-spade,
+        .choice-btn.correct .card-club,
+        .choice-btn.incorrect .card-spade,
+        .choice-btn.incorrect .card-club {
+            color: rgba(255, 255, 255, 0.9);
+        }
 
         /* Prevent sticky focus/active states on mobile */
         .choice-btn:focus {
@@ -1003,19 +1029,19 @@
             // Only replace when it's actually a card notation (capital letter followed by lowercase suit)
             // Use word boundaries to avoid replacing in the middle of words
             let formatted = handDescription
-                // Replace card notations with symbols - must be preceded by space, comma, or start of string
-                .replace(/(^|[, ])([2-9TJQKA]|10)s\b/g, '$1$2♠')  // Spades
-                .replace(/(^|[, ])([2-9TJQKA]|10)h\b/g, '$1$2♥')  // Hearts  
-                .replace(/(^|[, ])([2-9TJQKA]|10)d\b/g, '$1$2♦')  // Diamonds
-                .replace(/(^|[, ])([2-9TJQKA]|10)c\b/g, '$1$2♣')  // Clubs
+                // Replace card notations with colored spans - must be preceded by space, comma, or start of string
+                .replace(/(^|[, ])([2-9TJQKA]|10)s\b/g, '$1<span class="card-spade">$2♠</span>')  // Spades
+                .replace(/(^|[, ])([2-9TJQKA]|10)h\b/g, '$1<span class="card-heart">$2♥</span>')  // Hearts  
+                .replace(/(^|[, ])([2-9TJQKA]|10)d\b/g, '$1<span class="card-diamond">$2♦</span>')  // Diamonds
+                .replace(/(^|[, ])([2-9TJQKA]|10)c\b/g, '$1<span class="card-club">$2♣</span>')  // Clubs
                 // Handle "High" format (e.g., "Ah High")
-                .replace(/\b([2-9TJQKA])h High/g, '$1♥ High')  // Hearts in "High" context
-                .replace(/\b([2-9TJQKA])s High/g, '$1♠ High')  // Spades in "High" context
-                .replace(/\b([2-9TJQKA])d High/g, '$1♦ High')  // Diamonds in "High" context
-                .replace(/\b([2-9TJQKA])c High/g, '$1♣ High');  // Clubs in "High" context
+                .replace(/\b([2-9TJQKA])h High/g, '<span class="card-heart">$1♥</span> High')  // Hearts in "High" context
+                .replace(/\b([2-9TJQKA])s High/g, '<span class="card-spade">$1♠</span> High')  // Spades in "High" context
+                .replace(/\b([2-9TJQKA])d High/g, '<span class="card-diamond">$1♦</span> High')  // Diamonds in "High" context
+                .replace(/\b([2-9TJQKA])c High/g, '<span class="card-club">$1♣</span> High');  // Clubs in "High" context
             
-            // Replace T with 10 only when it's a card
-            formatted = formatted.replace(/\bT([♠♥♦♣])/g, '10$1');
+            // Replace T with 10 only when it's a card (now within the spans)
+            formatted = formatted.replace(/>T([♠♥♦♣])</g, '>10$1<');
             
             // Handle apostrophes in descriptions like "K's" -> "Ks"
             formatted = formatted.replace(/([2-9TJQKA10])['']s\b/g, '$1s');
