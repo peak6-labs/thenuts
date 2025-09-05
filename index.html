@@ -635,7 +635,45 @@
             return seed;
         }
 
+        function testPokerSolverUsage() {
+            console.log('=== Testing PokerSolver Card Conversion and Comparison ===');
+            
+            // Test 1: Card conversion
+            console.log('\nTest 1: Card Conversion');
+            const testCard = new Card('A', '♠');
+            console.log('Our card:', testCard.rank, testCard.suit);
+            console.log('Converted to pokersolver:', testCard.toPokerSolverString());
+            console.log('Expected: As');
+            
+            // Test 2: Compare two flushes
+            console.log('\nTest 2: Comparing Flushes');
+            const aceHighFlush = Hand.solve(['Ah', 'Kh', '9h', '5h', '2h']);
+            const nineHighFlush = Hand.solve(['9h', '8h', '5h', '3h', '2h']);
+            console.log('Ace-high flush:', aceHighFlush.descr);
+            console.log('Nine-high flush:', nineHighFlush.descr);
+            console.log('aceHighFlush.compare(nineHighFlush):', aceHighFlush.compare(nineHighFlush));
+            console.log('nineHighFlush.compare(aceHighFlush):', nineHighFlush.compare(aceHighFlush));
+            const flushWinner = Hand.winners([aceHighFlush, nineHighFlush]);
+            console.log('Hand.winners() says:', flushWinner[0].descr, 'should win');
+            console.log('Expected: Ace-high flush should win');
+            
+            // Test 3: Compare two four of a kinds
+            console.log('\nTest 3: Comparing Four of a Kinds');
+            const quadKings = Hand.solve(['Kh', 'Kd', 'Kc', 'Ks', '2h']);
+            const quadEights = Hand.solve(['8h', '8d', '8c', '8s', '2h']);
+            console.log('Quad Kings:', quadKings.descr);
+            console.log('Quad Eights:', quadEights.descr);
+            console.log('quadKings.compare(quadEights):', quadKings.compare(quadEights));
+            console.log('quadEights.compare(quadKings):', quadEights.compare(quadKings));
+            const quadWinner = Hand.winners([quadKings, quadEights]);
+            console.log('Hand.winners() says:', quadWinner[0].descr, 'should win');
+            console.log('Expected: Quad Kings should win');
+        }
+        
         function testSpecificBoard() {
+            // Run pokersolver tests first
+            testPokerSolverUsage();
+            console.log('\n=== Testing Specific Boards ===\n');
             // Test a board where we expect certain hands
             // Board: K K 8 8 2 (two pair on board)
             const testBoard = [
@@ -840,44 +878,19 @@
                     // PokerSolver.Hand.solve automatically finds the best 5-card hand from 7 cards
                     const hand = Hand.solve(allCardStrings);
                     
-                    // Compare hands - first by rank category, then by specific cards
+                    // Use Hand.winners() to properly compare hands
+                    // This handles all tie-breaker logic correctly
                     if (!bestHand) {
                         bestHand = hand;
                         bestRank = hand.rank;
-                    } else if (hand.rank > bestRank) {
-                        // Higher rank category always wins (e.g., flush beats straight)
-                        bestHand = hand;
-                        bestRank = hand.rank;
-                    } else if (hand.rank === bestRank) {
-                        // Same rank category - need special handling for Four of a Kind
-                        // due to pokersolver bug where it compares them incorrectly
-                        if (bestHand.descr.includes('Four of a Kind') && hand.descr.includes('Four of a Kind')) {
-                            // Extract the rank of the four of a kind from the description
-                            // Format is "Four of a Kind, X's" where X is the rank
-                            const bestQuadRank = bestHand.descr.match(/Four of a Kind, (.+)'s/)[1];
-                            const handQuadRank = hand.descr.match(/Four of a Kind, (.+)'s/)[1];
-                            
-                            // Create rank values for comparison
-                            const rankValues = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
-                            const bestValue = rankValues[bestQuadRank];
-                            const handValue = rankValues[handQuadRank];
-                            
-                            if (handValue > bestValue) {
-                                bestHand = hand;
-                                bestRank = hand.rank;
-                            }
-                        } else {
-                            // Use pokersolver's compare for other hand types
-                            try {
-                                const comparison = hand.compare(bestHand);
-                                if (comparison === 1) {
-                                    bestHand = hand;
-                                    bestRank = hand.rank;
-                                }
-                            } catch (e) {
-                                console.log('Compare error:', e);
-                            }
+                    } else {
+                        // Let pokersolver determine the winner using Hand.winners()
+                        const winners = Hand.winners([bestHand, hand]);
+                        if (winners[0] === hand) {
+                            bestHand = hand;
+                            bestRank = hand.rank;
                         }
+                        // If winners[0] === bestHand, keep current best
                     }
                 }
             }
