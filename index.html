@@ -1031,6 +1031,7 @@
                 const button = document.createElement('button');
                 button.className = 'choice-btn';
                 button.innerHTML = formatHandForDisplay(choice);
+                button.dataset.answer = choice; // Store original unformatted answer
                 button.onclick = (e) => {
                     e.preventDefault();
                     e.target.blur(); // Immediately blur on click
@@ -1075,9 +1076,10 @@
                 btn.disabled = true;
                 // Remove focus from button to prevent sticky highlighting on mobile
                 btn.blur();
-                if (btn.textContent === currentAnswer) {
+                const btnAnswer = btn.dataset.answer;
+                if (btnAnswer === currentAnswer) {
                     btn.classList.add('correct');
-                } else if (btn.textContent === choice && choice !== currentAnswer) {
+                } else if (btnAnswer === choice && choice !== currentAnswer) {
                     btn.classList.add('incorrect');
                 }
             });
