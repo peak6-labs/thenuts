@@ -635,9 +635,165 @@
             return seed;
         }
 
+        function testSpecificBoard() {
+            // Test a board where we expect certain hands
+            // Board: K K 8 8 2 (two pair on board)
+            const testBoard = [
+                new Card('K', '♠'),
+                new Card('K', '♥'),
+                new Card('8', '♣'),
+                new Card('8', '♦'),
+                new Card('2', '♠')
+            ];
+            
+            console.log('=== Testing specific board: K♠ K♥ 8♣ 8♦ 2♠ ===');
+            
+            const boardStrings = cardsToPokerSolverArray(testBoard);
+            
+            // Test pocket K-K (would make quad Kings)
+            const pocketKK = [new Card('K', '♣'), new Card('K', '♦')];
+            const handKK = Hand.solve([...boardStrings, ...cardsToPokerSolverArray(pocketKK)]);
+            console.log('With pocket K♣ K♦:', handKK.descr, 'rank:', handKK.rank);
+            
+            // Test pocket 8-8 (would make quad 8s)
+            const pocket88 = [new Card('8', '♠'), new Card('8', '♥')];
+            const hand88 = Hand.solve([...boardStrings, ...cardsToPokerSolverArray(pocket88)]);
+            console.log('With pocket 8♠ 8♥:', hand88.descr, 'rank:', hand88.rank);
+            
+            // Compare them
+            console.log('Comparing: handKK.compare(hand88) =', handKK.compare(hand88));
+            console.log('Comparing: hand88.compare(handKK) =', hand88.compare(handKK));
+            console.log('handKK cards:', handKK.cards);
+            console.log('hand88 cards:', hand88.cards);
+            
+            const nuts = findTheNuts(testBoard);
+            console.log('\nThe nuts for this board:', nuts);
+            console.log('Expected: Four of a Kind, Ks (Kings beat 8s)');
+            
+            // Test another board
+            // Board: A A A 5 5 (full house on board itself)
+            const testBoard2 = [
+                new Card('A', '♠'),
+                new Card('A', '♥'),
+                new Card('A', '♣'),
+                new Card('5', '♦'),
+                new Card('5', '♠')
+            ];
+            
+            console.log('\n=== Testing specific board: A♠ A♥ A♣ 5♦ 5♠ ===');
+            
+            const boardStrings2 = cardsToPokerSolverArray(testBoard2);
+            
+            // Test pocket A-x (would make quad Aces)
+            const pocketA = [new Card('A', '♦'), new Card('7', '♥')];
+            const handA = Hand.solve([...boardStrings2, ...cardsToPokerSolverArray(pocketA)]);
+            console.log('With pocket A♦ 7♥:', handA.descr, 'rank:', handA.rank);
+            
+            // Test pocket 5-5 (would make quad 5s - impossible but let's test)
+            const pocket5 = [new Card('5', '♣'), new Card('5', '♥')];
+            const hand5 = Hand.solve([...boardStrings2, ...cardsToPokerSolverArray(pocket5)]);
+            console.log('With pocket 5♣ 5♥:', hand5.descr, 'rank:', hand5.rank);
+            
+            // Compare them
+            console.log('Comparing: handA.compare(hand5) =', handA.compare(hand5));
+            console.log('Comparing: hand5.compare(handA) =', hand5.compare(handA));
+            
+            const nuts2 = findTheNuts(testBoard2);
+            console.log('\nThe nuts for this board:', nuts2);
+            console.log('Expected: Four of a Kind, As (Aces beat 5s)');
+            
+            // Test a board with single pair where Full House should be nuts
+            // Board: Q Q 7 3 2 rainbow
+            const testBoard3 = [
+                new Card('Q', '♠'),
+                new Card('Q', '♥'),
+                new Card('7', '♣'),
+                new Card('3', '♦'),
+                new Card('2', '♠')
+            ];
+            
+            console.log('\n=== Testing specific board: Q♠ Q♥ 7♣ 3♦ 2♠ ===');
+            const nuts3 = findTheNuts(testBoard3);
+            console.log('The nuts for this board:', nuts3);
+            console.log('Expected: Four of a Kind (Quad Queens)');
+            
+            // Test a board where Full House IS the nuts
+            // Board with trips: 9 9 9 K 2 (no quads possible)
+            const testBoard4 = [
+                new Card('9', '♠'),
+                new Card('9', '♥'),
+                new Card('9', '♣'),
+                new Card('K', '♦'),
+                new Card('2', '♠')
+            ];
+            
+            console.log('\n=== Testing specific board: 9♠ 9♥ 9♣ K♦ 2♠ ===');
+            const nuts4 = findTheNuts(testBoard4);
+            console.log('The nuts for this board:', nuts4);
+            console.log('Expected: Four of a Kind, 9s (pocket 9-x makes quad nines)');
+            
+            // Test a board where the board itself is a full house
+            // Board: 7 7 7 3 3 - Best would be quad 7s or quad 3s
+            const testBoard5 = [
+                new Card('7', '♠'),
+                new Card('7', '♥'),
+                new Card('7', '♣'),
+                new Card('3', '♦'),
+                new Card('3', '♠')
+            ];
+            
+            console.log('\n=== Testing specific board: 7♠ 7♥ 7♣ 3♦ 3♠ ===');
+            const nuts5 = findTheNuts(testBoard5);
+            console.log('The nuts for this board:', nuts5);
+            console.log('Expected: Four of a Kind, 7s (pocket 7-x makes quad sevens)');
+            
+            console.log('\n=== CONCLUSION ===');
+            console.log('Full House can never be the nuts because:');
+            console.log('- If there\'s a pair on board, pocket pair makes quads');
+            console.log('- If there are trips on board, the 4th card makes quads');
+            console.log('- If board has full house, pocket card can make quads');
+            console.log('This explains why we see 0% Full House in generation!');
+            
+            // Test if two pair can ever be the nuts
+            // First test: 2-3-7-8-A
+            const testBoard6 = [
+                new Card('2', '♠'),
+                new Card('3', '♥'),
+                new Card('7', '♣'),
+                new Card('8', '♦'),
+                new Card('A', '♠')
+            ];
+            
+            console.log('\n=== Testing: 2♠ 3♥ 7♣ 8♦ A♠ ===');
+            const nuts6 = findTheNuts(testBoard6);
+            console.log('The nuts for this board:', nuts6);
+            console.log('Expected: Straight (4-5 makes wheel A-2-3-4-5) or Trips if no straight');
+            
+            // Test with maximum gaps to prevent straights - avoid Ace!
+            // 2-4-7-J-K has no possible straights
+            const testBoard7 = [
+                new Card('2', '♠'),
+                new Card('4', '♥'),
+                new Card('7', '♣'),
+                new Card('J', '♦'),
+                new Card('K', '♣')
+            ];
+            
+            console.log('\n=== Testing maximum gaps (no Ace): 2♠ 4♥ 7♣ J♦ K♣ ===');
+            const nuts7 = findTheNuts(testBoard7);
+            console.log('The nuts for this board:', nuts7);
+            console.log('Analysis: No straight possible (no 5-card sequence). Should be Three of a Kind!');
+            console.log('\nConclusion: Even without straights, pocket pairs make trips which beat two pair.');
+            console.log('Therefore, Two Pair can NEVER be the nuts!');
+        }
+        
         function initializeGame() {
             // Hand is already available as a global from pokersolver
             document.querySelector('.new-game-btn').onclick = startNewGame;
+            
+            // Run test first (disabled for production)
+            // testSpecificBoard();
+            
             startNewGame();
         }
 
@@ -684,10 +840,44 @@
                     // PokerSolver.Hand.solve automatically finds the best 5-card hand from 7 cards
                     const hand = Hand.solve(allCardStrings);
                     
-                    // Use pokersolver's compare method for proper comparison including kickers
-                    if (!bestHand || hand.rank > bestRank || (hand.rank === bestRank && hand.compare(bestHand) === 1)) {
+                    // Compare hands - first by rank category, then by specific cards
+                    if (!bestHand) {
                         bestHand = hand;
                         bestRank = hand.rank;
+                    } else if (hand.rank > bestRank) {
+                        // Higher rank category always wins (e.g., flush beats straight)
+                        bestHand = hand;
+                        bestRank = hand.rank;
+                    } else if (hand.rank === bestRank) {
+                        // Same rank category - need special handling for Four of a Kind
+                        // due to pokersolver bug where it compares them incorrectly
+                        if (bestHand.descr.includes('Four of a Kind') && hand.descr.includes('Four of a Kind')) {
+                            // Extract the rank of the four of a kind from the description
+                            // Format is "Four of a Kind, X's" where X is the rank
+                            const bestQuadRank = bestHand.descr.match(/Four of a Kind, (.+)'s/)[1];
+                            const handQuadRank = hand.descr.match(/Four of a Kind, (.+)'s/)[1];
+                            
+                            // Create rank values for comparison
+                            const rankValues = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
+                            const bestValue = rankValues[bestQuadRank];
+                            const handValue = rankValues[handQuadRank];
+                            
+                            if (handValue > bestValue) {
+                                bestHand = hand;
+                                bestRank = hand.rank;
+                            }
+                        } else {
+                            // Use pokersolver's compare for other hand types
+                            try {
+                                const comparison = hand.compare(bestHand);
+                                if (comparison === 1) {
+                                    bestHand = hand;
+                                    bestRank = hand.rank;
+                                }
+                            } catch (e) {
+                                console.log('Compare error:', e);
+                            }
+                        }
                     }
                 }
             }
@@ -743,6 +933,8 @@
             
             // Find the absolute nuts
             const theNuts = findTheNuts(communityCards);
+            
+            // Debug: Don't log anything for now to reduce noise
             
             // Generate choices
             const choices = new Set();
@@ -875,11 +1067,138 @@
             }
         }
 
+        function getHandTypeCategory(handDescription) {
+            // Extract the base hand type from descriptions like "Four of a Kind, As"
+            if (handDescription.includes('Royal Flush')) return 'Royal Flush';
+            if (handDescription.includes('Straight Flush')) return 'Straight Flush';
+            if (handDescription.includes('Four of a Kind')) return 'Four of a Kind';
+            if (handDescription.includes('Full House')) return 'Full House';
+            if (handDescription.includes('Flush')) return 'Flush';
+            if (handDescription.includes('Straight')) return 'Straight';
+            if (handDescription.includes('Three of a Kind')) return 'Three of a Kind';
+            if (handDescription.includes('Two Pair')) return 'Two Pair';
+            // Note: Pair and High Card should never appear as the nuts
+            if (handDescription.includes('Pair')) return 'Pair';
+            return 'High Card';
+        }
+
         function preGenerateScenarios(count) {
             preGeneratedScenarios = [];
-            for (let i = 0; i < count; i++) {
-                preGeneratedScenarios.push(generateScenario());
+            const handTypeCounts = {};  // Tracks accepted scenarios
+            const generatedTypeCounts = {};  // Tracks ALL generated scenarios
+            const MAX_PER_TYPE = 3;  // Changed from 2 to 3 since only 6 hand types are possible as nuts
+            let attempts = 0;
+            const MAX_ATTEMPTS = count * 100; // More attempts for better variety
+            let rejectCount = 0;
+            const rejectedTypes = {}; // Track rejections by type
+            
+            console.log('Starting scenario generation for', count, 'hands');
+            
+            while (preGeneratedScenarios.length < count && attempts < MAX_ATTEMPTS) {
+                attempts++;
+                const scenario = generateScenario();
+                const handType = getHandTypeCategory(scenario.answer);
+                
+                // Track ALL generated types
+                if (!generatedTypeCounts[handType]) {
+                    generatedTypeCounts[handType] = 0;
+                }
+                generatedTypeCounts[handType]++;
+                
+                // Initialize accepted counter if needed
+                if (!handTypeCounts[handType]) {
+                    handTypeCounts[handType] = 0;
+                }
+                
+                if (handTypeCounts[handType] < MAX_PER_TYPE) {
+                    handTypeCounts[handType]++;
+                    preGeneratedScenarios.push(scenario);
+                    console.log(`✓ Added ${handType} (${handTypeCounts[handType]}/3). Total: ${preGeneratedScenarios.length}/${count}`);
+                } else {
+                    // Track rejections silently
+                    rejectCount++;
+                    if (!rejectedTypes[handType]) {
+                        rejectedTypes[handType] = 0;
+                    }
+                    rejectedTypes[handType]++;
+                    
+                    // Only log every 100 rejections to reduce spam
+                    if (rejectCount % 100 === 0) {
+                        console.log(`Progress: ${rejectCount} rejections, ${preGeneratedScenarios.length}/${count} scenarios found`);
+                    }
+                }
             }
+            
+            // Only fill remaining if we really couldn't generate enough variety
+            if (preGeneratedScenarios.length < count) {
+                console.warn(`Could only generate ${preGeneratedScenarios.length}/${count} scenarios with variety limits.`);
+                console.warn(`Filling remaining slots - variety limits will be exceeded.`);
+                
+                // Just fill the remaining slots
+                while (preGeneratedScenarios.length < count) {
+                    const scenario = generateScenario();
+                    const handType = getHandTypeCategory(scenario.answer);
+                    
+                    if (!handTypeCounts[handType]) {
+                        handTypeCounts[handType] = 0;
+                    }
+                    handTypeCounts[handType]++;
+                    
+                    if (!generatedTypeCounts[handType]) {
+                        generatedTypeCounts[handType] = 0;
+                    }
+                    generatedTypeCounts[handType]++;
+                    
+                    preGeneratedScenarios.push(scenario);
+                    console.log(`Overflow: Added ${handType} (now at ${handTypeCounts[handType]} total)`);
+                }
+            }
+            
+            // Log final summary
+            console.log('=== Generation Summary ===');
+            console.log('Accepted distribution:', handTypeCounts);
+            console.log(`Total: ${preGeneratedScenarios.length} scenarios from ${attempts} attempts (${rejectCount} rejected)`);
+            
+            // Show which types were rejected most
+            if (Object.keys(rejectedTypes).length > 0) {
+                console.log('Rejected by type:', rejectedTypes);
+            }
+            
+            // Create comprehensive generation report
+            console.log('\n=== Generation Report ===');
+            console.log(`Total Generated: ${attempts}`);
+            
+            // All possible hand types that can actually be the nuts
+            // (Pair and High Card can never be the nuts)
+            const allHandTypes = [
+                'Royal Flush', 'Straight Flush', 'Four of a Kind',
+                'Full House', 'Flush', 'Straight',
+                'Three of a Kind', 'Two Pair'
+            ];
+            
+            // Sort by count (descending)
+            const sortedTypes = allHandTypes.map(type => ({
+                type: type,
+                count: generatedTypeCounts[type] || 0,
+                percentage: ((generatedTypeCounts[type] || 0) / attempts * 100).toFixed(1)
+            })).sort((a, b) => b.count - a.count);
+            
+            console.log('\nBreakdown by hand type:');
+            sortedTypes.forEach(item => {
+                const bar = '█'.repeat(Math.floor(item.percentage / 2)); // Visual bar
+                console.log(`${item.count.toString().padStart(4)} ${item.type.padEnd(20)} ${item.percentage.padStart(5)}% ${bar}`);
+            });
+            
+            // Show acceptance rate
+            console.log('\n=== Acceptance Rates ===');
+            allHandTypes.forEach(type => {
+                const generated = generatedTypeCounts[type] || 0;
+                const accepted = handTypeCounts[type] || 0;
+                if (generated > 0) {
+                    const acceptRate = (accepted / generated * 100).toFixed(1);
+                    console.log(`${type.padEnd(20)}: ${accepted}/${generated} accepted (${acceptRate}%)`);
+                }
+            });
         }
 
         function nextRound() {
