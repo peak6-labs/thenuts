@@ -731,7 +731,7 @@
             console.log('hand88 cards:', hand88.cards);
             
             const nuts = findTheNuts(testBoard);
-            console.log('\nThe nuts for this board:', nuts);
+            console.log('\nThe nuts for this board:', nuts.description);
             console.log('Expected: Four of a Kind, Ks (Kings beat 8s)');
             
             // Test another board
@@ -763,7 +763,7 @@
             console.log('Comparing: hand5.compare(handA) =', hand5.compare(handA));
             
             const nuts2 = findTheNuts(testBoard2);
-            console.log('\nThe nuts for this board:', nuts2);
+            console.log('\nThe nuts for this board:', nuts2.description);
             console.log('Expected: Four of a Kind, As (Aces beat 5s)');
             
             // Test a board with single pair where Full House should be nuts
@@ -778,7 +778,7 @@
             
             console.log('\n=== Testing specific board: Q♠ Q♥ 7♣ 3♦ 2♠ ===');
             const nuts3 = findTheNuts(testBoard3);
-            console.log('The nuts for this board:', nuts3);
+            console.log('The nuts for this board:', nuts3.description);
             console.log('Expected: Four of a Kind (Quad Queens)');
             
             // Test a board where Full House IS the nuts
@@ -793,7 +793,7 @@
             
             console.log('\n=== Testing specific board: 9♠ 9♥ 9♣ K♦ 2♠ ===');
             const nuts4 = findTheNuts(testBoard4);
-            console.log('The nuts for this board:', nuts4);
+            console.log('The nuts for this board:', nuts4.description);
             console.log('Expected: Four of a Kind, 9s (pocket 9-x makes quad nines)');
             
             // Test a board where the board itself is a full house
@@ -808,7 +808,7 @@
             
             console.log('\n=== Testing specific board: 7♠ 7♥ 7♣ 3♦ 3♠ ===');
             const nuts5 = findTheNuts(testBoard5);
-            console.log('The nuts for this board:', nuts5);
+            console.log('The nuts for this board:', nuts5.description);
             console.log('Expected: Four of a Kind, 7s (pocket 7-x makes quad sevens)');
             
             console.log('\n=== CONCLUSION ===');
@@ -830,7 +830,7 @@
             
             console.log('\n=== Testing: 2♠ 3♥ 7♣ 8♦ A♠ ===');
             const nuts6 = findTheNuts(testBoard6);
-            console.log('The nuts for this board:', nuts6);
+            console.log('The nuts for this board:', nuts6.description);
             console.log('Expected: Straight (4-5 makes wheel A-2-3-4-5) or Trips if no straight');
             
             // Test with maximum gaps to prevent straights - avoid Ace!
@@ -845,7 +845,7 @@
             
             console.log('\n=== Testing maximum gaps (no Ace): 2♠ 4♥ 7♣ J♦ K♣ ===');
             const nuts7 = findTheNuts(testBoard7);
-            console.log('The nuts for this board:', nuts7);
+            console.log('The nuts for this board:', nuts7.description);
             console.log('Analysis: No straight possible (no 5-card sequence). Should be Three of a Kind!');
             console.log('\nConclusion: Even without straights, pocket pairs make trips which beat two pair.');
             console.log('Therefore, Two Pair can NEVER be the nuts!');
@@ -891,6 +891,7 @@
             
             let bestHand = null;
             let bestRank = -1;
+            let bestHoleCards = null;
             
             // Check all possible hole card combinations
             for (let i = 0; i < remainingCards.length - 1; i++) {
@@ -909,19 +910,24 @@
                     if (!bestHand) {
                         bestHand = hand;
                         bestRank = hand.rank;
+                        bestHoleCards = holeCards;
                     } else {
                         // Let pokersolver determine the winner using Hand.winners()
                         const winners = Hand.winners([bestHand, hand]);
                         if (winners[0] === hand) {
                             bestHand = hand;
                             bestRank = hand.rank;
+                            bestHoleCards = holeCards;
                         }
                         // If winners[0] === bestHand, keep current best
                     }
                 }
             }
             
-            return formatHandDescription(bestHand.descr);
+            return {
+                description: formatHandDescription(bestHand.descr),
+                holeCards: bestHoleCards
+            };
         }
 
         // Find player's best hand
@@ -935,9 +941,10 @@
             return formatHandDescription(hand.descr);
         }
 
-        // Generate possible hands for wrong answers
+        // Generate possible hands for wrong answers with strategic decoys
         function generatePossibleHands(communityCards) {
-            const possibleHands = new Set();
+            const possibleHands = [];
+            const usedDescriptions = new Set();
             const deck = new Deck();
             
             // Remove community cards from deck
@@ -945,8 +952,20 @@
                 !communityCards.some(cc => cc.rank === card.rank && cc.suit === card.suit)
             );
             
-            // Sample random hole card combinations
-            for (let attempt = 0; attempt < 30; attempt++) {
+            // Analyze board for strategic decoy generation
+            const boardAnalysis = analyzeBoardTexture(communityCards);
+            
+            // 1. Generate strong strategic decoys based on board texture
+            const strategicDecoys = generateStrategicDecoys(communityCards, deck, boardAnalysis);
+            for (let decoy of strategicDecoys) {
+                if (!usedDescriptions.has(decoy.description)) {
+                    possibleHands.push(decoy);
+                    usedDescriptions.add(decoy.description);
+                }
+            }
+            
+            // 2. Sample additional random combinations for variety
+            for (let attempt = 0; attempt < 20; attempt++) {
                 const i = Math.floor(seededRandom() * deck.cards.length);
                 let j = Math.floor(seededRandom() * deck.cards.length);
                 while (j === i) {
@@ -960,10 +979,163 @@
                 ];
                 
                 const hand = Hand.solve(allCardStrings);
-                possibleHands.add(formatHandDescription(hand.descr));
+                const description = formatHandDescription(hand.descr);
+                
+                if (!usedDescriptions.has(description)) {
+                    possibleHands.push({
+                        description: description,
+                        holeCards: sampleHoleCards,
+                        rank: hand.rank
+                    });
+                    usedDescriptions.add(description);
+                }
             }
             
-            return Array.from(possibleHands);
+            return possibleHands;
+        }
+        
+        // Analyze board texture for strategic decoy generation
+        function analyzeBoardTexture(communityCards) {
+            const suits = {};
+            const ranks = {};
+            const sortedRanks = [];
+            
+            // Count suits and ranks
+            communityCards.forEach(card => {
+                suits[card.suit] = (suits[card.suit] || 0) + 1;
+                ranks[card.rank] = (ranks[card.rank] || 0) + 1;
+                sortedRanks.push(card.rank);
+            });
+            
+            // Check for flush possibilities
+            const flushSuit = Object.keys(suits).find(suit => suits[suit] >= 3);
+            const hasFlushDraw = flushSuit !== undefined;
+            const isFlushOnBoard = Object.values(suits).some(count => count >= 5);
+            
+            // Check for straight possibilities
+            const rankValues = sortedRanks.map(r => "23456789TJQKA".indexOf(r));
+            rankValues.sort((a, b) => a - b);
+            const hasStraightDraw = checkStraightPossibility(rankValues);
+            
+            // Check for paired board
+            const hasPair = Object.values(ranks).some(count => count === 2);
+            const hasTrips = Object.values(ranks).some(count => count === 3);
+            const hasQuads = Object.values(ranks).some(count => count === 4);
+            
+            return {
+                flushSuit,
+                hasFlushDraw,
+                isFlushOnBoard,
+                hasStraightDraw,
+                hasPair,
+                hasTrips,
+                hasQuads,
+                ranks,
+                suits
+            };
+        }
+        
+        // Check if straight is possible with the board
+        function checkStraightPossibility(sortedRankValues) {
+            // Check for possible 5-card sequences including potential hole cards
+            for (let i = 0; i <= sortedRankValues.length - 3; i++) {
+                const gap = sortedRankValues[i + 2] - sortedRankValues[i];
+                if (gap <= 4) return true; // Straight possible with right hole cards
+            }
+            return false;
+        }
+        
+        // Generate strategic decoys based on board analysis
+        function generateStrategicDecoys(communityCards, deck, analysis) {
+            const decoys = [];
+            
+            // 1. If flush is possible, generate second-nut flush
+            if (analysis.hasFlushDraw && analysis.flushSuit) {
+                const suitedCards = deck.cards.filter(c => c.suit === analysis.flushSuit);
+                if (suitedCards.length >= 2) {
+                    // Get high cards but not the highest for second-nut flush
+                    suitedCards.sort((a, b) => "23456789TJQKA".indexOf(b.rank) - "23456789TJQKA".indexOf(a.rank));
+                    if (suitedCards.length > 2) {
+                        // Skip the ace if available to make second-nut flush
+                        const startIdx = suitedCards[0].rank === 'A' ? 1 : 0;
+                        if (startIdx + 1 < suitedCards.length) {
+                            const flushHoleCards = [suitedCards[startIdx], suitedCards[startIdx + 1]];
+                            const allCardStrings = [
+                                ...cardsToPokerSolverArray(communityCards),
+                                ...cardsToPokerSolverArray(flushHoleCards)
+                            ];
+                            const hand = Hand.solve(allCardStrings);
+                            decoys.push({
+                                description: formatHandDescription(hand.descr),
+                                holeCards: flushHoleCards,
+                                rank: hand.rank
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // 2. If board is paired, generate trips or full house
+            if (analysis.hasPair) {
+                const pairedRank = Object.keys(analysis.ranks).find(r => analysis.ranks[r] === 2);
+                const matchingCard = deck.cards.find(c => c.rank === pairedRank);
+                if (matchingCard) {
+                    // Find another high card for trips
+                    const otherCard = deck.cards.find(c => c !== matchingCard && "AKQJ".includes(c.rank));
+                    if (otherCard) {
+                        const tripsHoleCards = [matchingCard, otherCard];
+                        const allCardStrings = [
+                            ...cardsToPokerSolverArray(communityCards),
+                            ...cardsToPokerSolverArray(tripsHoleCards)
+                        ];
+                        const hand = Hand.solve(allCardStrings);
+                        decoys.push({
+                            description: formatHandDescription(hand.descr),
+                            holeCards: tripsHoleCards,
+                            rank: hand.rank
+                        });
+                    }
+                }
+            }
+            
+            // 3. Generate high pocket pairs for overpairs/sets
+            const highRanks = ['A', 'K', 'Q', 'J'];
+            for (let rank of highRanks) {
+                const pairCards = deck.cards.filter(c => c.rank === rank);
+                if (pairCards.length >= 2) {
+                    const pocketPair = [pairCards[0], pairCards[1]];
+                    const allCardStrings = [
+                        ...cardsToPokerSolverArray(communityCards),
+                        ...cardsToPokerSolverArray(pocketPair)
+                    ];
+                    const hand = Hand.solve(allCardStrings);
+                    decoys.push({
+                        description: formatHandDescription(hand.descr),
+                        holeCards: pocketPair,
+                        rank: hand.rank
+                    });
+                    break; // Only one pocket pair decoy
+                }
+            }
+            
+            // 4. Generate two high cards for potential straights or high pairs
+            const aceCard = deck.cards.find(c => c.rank === 'A');
+            const kingCard = deck.cards.find(c => c.rank === 'K');
+            if (aceCard && kingCard && aceCard.suit !== kingCard.suit) {
+                const bigSlick = [aceCard, kingCard];
+                const allCardStrings = [
+                    ...cardsToPokerSolverArray(communityCards),
+                    ...cardsToPokerSolverArray(bigSlick)
+                ];
+                const hand = Hand.solve(allCardStrings);
+                decoys.push({
+                    description: formatHandDescription(hand.descr),
+                    holeCards: bigSlick,
+                    rank: hand.rank
+                });
+            }
+            
+            return decoys;
         }
 
         function generateScenario() {
@@ -976,24 +1148,70 @@
             // Debug: Don't log anything for now to reduce noise
             
             // Generate choices
-            const choices = new Set();
-            choices.add(theNuts);
+            const choices = [];
+            const usedDescriptions = new Set();
             
-            // Generate other possible hands
+            // Add the nuts as first choice
+            choices.push(theNuts);
+            usedDescriptions.add(theNuts.description);
+            
+            // Generate other possible hands, prioritizing diverse hand types
             const possibleHands = generatePossibleHands(communityCards);
+            
+            // Sort by rank to get a variety of hand strengths
+            possibleHands.sort((a, b) => b.rank - a.rank);
+            
             for (let hand of possibleHands) {
-                if (choices.size >= 4) break;
-                if (!choices.has(hand)) {
-                    choices.add(hand);
+                if (choices.length >= 4) break;
+                // Avoid duplicate hand descriptions
+                if (!usedDescriptions.has(hand.description)) {
+                    choices.push(hand);
+                    usedDescriptions.add(hand.description);
                 }
             }
             
-            // If we still need more choices, add the board play
-            const boardOnly = Hand.solve(cardsToPokerSolverArray(communityCards));
-            choices.add(formatHandDescription(boardOnly.descr));
+            // If we still need more choices, generate board play with random hole cards
+            let fallbackAttempts = 0;
+            const MAX_FALLBACK_ATTEMPTS = 50;
+            while (choices.length < 4 && fallbackAttempts < MAX_FALLBACK_ATTEMPTS) {
+                fallbackAttempts++;
+                const remainingDeck = deck.cards.filter(card => 
+                    !communityCards.some(cc => cc.rank === card.rank && cc.suit === card.suit)
+                );
+                
+                if (remainingDeck.length < 2) break; // Not enough cards left
+                
+                const i = Math.floor(seededRandom() * remainingDeck.length);
+                let j = Math.floor(seededRandom() * remainingDeck.length);
+                let innerAttempts = 0;
+                while (j === i && innerAttempts < 10) {
+                    j = Math.floor(seededRandom() * remainingDeck.length);
+                    innerAttempts++;
+                }
+                if (j === i && remainingDeck.length > 1) {
+                    j = (i + 1) % remainingDeck.length; // Fallback to next card
+                }
+                const randomHoleCards = [remainingDeck[i], remainingDeck[j]];
+                const allCardStrings = [
+                    ...cardsToPokerSolverArray(communityCards),
+                    ...cardsToPokerSolverArray(randomHoleCards)
+                ];
+                const hand = Hand.solve(allCardStrings);
+                const desc = formatHandDescription(hand.descr);
+                
+                // If we can't find unique descriptions, accept duplicates to avoid infinite loop
+                if (!usedDescriptions.has(desc) || fallbackAttempts > MAX_FALLBACK_ATTEMPTS - 10) {
+                    choices.push({
+                        description: desc,
+                        holeCards: randomHoleCards,
+                        rank: hand.rank
+                    });
+                    usedDescriptions.add(desc);
+                }
+            }
             
-            // Ensure we have 4 choices
-            const choicesArray = Array.from(choices).slice(0, 4);
+            // Ensure we have exactly 4 choices
+            const choicesArray = choices.slice(0, 4);
             
             // Shuffle choices
             for (let i = choicesArray.length - 1; i > 0; i--) {
@@ -1049,6 +1267,22 @@
             return formatted;
         }
         
+        function formatHoleCardsForDisplay(holeCards) {
+            // Format hole cards for display with colored suits
+            const card1 = holeCards[0];
+            const card2 = holeCards[1];
+            
+            function formatCard(card) {
+                const rank = card.rank === 'T' ? '10' : card.rank;
+                const suitClass = (card.suit === '♥' || card.suit === '♦') ? 
+                    (card.suit === '♥' ? 'card-heart' : 'card-diamond') : 
+                    (card.suit === '♠' ? 'card-spade' : 'card-club');
+                return `<span class="${suitClass}">${rank}${card.suit}</span>`;
+            }
+            
+            return `${formatCard(card1)} ${formatCard(card2)}`;
+        }
+        
         function renderChoices(choices) {
             const container = document.getElementById('choices');
             container.innerHTML = '';
@@ -1056,8 +1290,9 @@
             choices.forEach(choice => {
                 const button = document.createElement('button');
                 button.className = 'choice-btn';
-                button.innerHTML = formatHandForDisplay(choice);
-                button.dataset.answer = choice; // Store original unformatted answer
+                // Display hole cards instead of hand description
+                button.innerHTML = formatHoleCardsForDisplay(choice.holeCards);
+                button.dataset.answer = JSON.stringify(choice); // Store full choice object
                 button.onclick = (e) => {
                     e.preventDefault();
                     e.target.blur(); // Immediately blur on click
@@ -1102,15 +1337,21 @@
                 btn.disabled = true;
                 // Remove focus from button to prevent sticky highlighting on mobile
                 btn.blur();
-                const btnAnswer = btn.dataset.answer;
-                if (btnAnswer === currentAnswer) {
+                const btnChoice = JSON.parse(btn.dataset.answer);
+                
+                // Add hand description as feedback
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `${originalHTML}<br><small style="font-size: 12px; opacity: 0.9">${formatHandForDisplay(btnChoice.description)}</small>`;
+                
+                // Compare by description since that uniquely identifies the hand strength
+                if (btnChoice.description === currentAnswer.description) {
                     btn.classList.add('correct');
-                } else if (btnAnswer === choice && choice !== currentAnswer) {
+                } else if (btnChoice.description === choice.description && choice.description !== currentAnswer.description) {
                     btn.classList.add('incorrect');
                 }
             });
             
-            if (choice === currentAnswer) {
+            if (choice.description === currentAnswer.description) {
                 score++;
                 document.getElementById('score').textContent = score;
             }
@@ -1163,7 +1404,7 @@
             while (preGeneratedScenarios.length < count && attempts < MAX_ATTEMPTS) {
                 attempts++;
                 const scenario = generateScenario();
-                const handType = getHandTypeCategory(scenario.answer);
+                const handType = getHandTypeCategory(scenario.answer.description);
                 
                 // Track ALL generated types
                 if (!generatedTypeCounts[handType]) {
@@ -1327,9 +1568,10 @@
             const resultDiv = document.getElementById('game-over');
             const resultMessage = document.getElementById('result-message');
             
-            const winPercentage = Math.round((score / MAX_HANDS) * 100);
+            const winPercentage = Math.round((score / totalHandsPlayed) * 100);
             
-            resultMessage.innerHTML = `<strong>Final Score: ${score}/${MAX_HANDS} (${winPercentage}%)</strong><br>
+            resultMessage.innerHTML = `<strong>Final Score: ${score}/${totalHandsPlayed} correct (${winPercentage}%)</strong><br>
+                                      Completed ${totalHandsPlayed} of ${MAX_HANDS} hands<br>
                                       Everyone playing this hour gets the same sequence of hands.<br>
                                       Share your score and compete with friends!`;
             
@@ -1361,18 +1603,19 @@
         }
 
         function shareResults() {
-            const winPercentage = Math.round((score / MAX_HANDS) * 100);
+            const winPercentage = Math.round((score / totalHandsPlayed) * 100);
             const timeWindow = getTimeWindow();
             
             // Create bar chart visualization
             const maxBars = 10;
-            const barsToFill = Math.round((score / MAX_HANDS) * maxBars);
+            const barsToFill = Math.round((score / totalHandsPlayed) * maxBars);
             const barChart = '🟩'.repeat(barsToFill) + '⬜'.repeat(maxBars - barsToFill);
             
             const shareText = `🃏 The Nuts - Poker Challenge\n` +
                             `${timeWindow}\n\n` +
                             `${barChart}\n` +
-                            `${score}/${MAX_HANDS} hands (${winPercentage}%)\n\n` +
+                            `${score}/${totalHandsPlayed} correct (${winPercentage}%)\n` +
+                            `Completed ${totalHandsPlayed}/${MAX_HANDS} hands\n\n` +
                             `Can you beat my score?\n` +
                             `Play at: ${window.location.href}`;
             
