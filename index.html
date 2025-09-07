@@ -98,6 +98,19 @@
             background: #FFEBEE;
             padding: 5px 10px;
             border-radius: 20px;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .timer-display.paused {
+            background: #FFE0B2;
+            color: #E65100;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
         }
 
         .score-display {
@@ -394,6 +407,63 @@
         .copied-toast.show {
             opacity: 1;
         }
+        
+        /* Difficulty Progress Styles */
+        .difficulty-progress {
+            background: linear-gradient(135deg, #F3E5F5, #FCE4EC);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(107, 43, 158, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .difficulty-badge {
+            font-size: 20px;
+            font-weight: 700;
+            display: inline-block;
+        }
+        
+        .streak-display {
+            font-size: 18px;
+            font-weight: 600;
+            color: #6B2B9E;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #9C27B0, #AB47BC);
+            transition: width 0.5s ease;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .hint-text {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 10px;
+            color: #388E3C;
+            font-weight: 600;
+            text-align: center;
+            font-size: 14px;
+        }
 
         .loading {
             text-align: center;
@@ -463,10 +533,18 @@
             <div class="header">
                 <h1 class="title">Find The Nuts!</h1>
                 <div class="controls">
-                    <div class="timer-display" id="countdown">60.0s (0/15)</div>
+                    <div class="timer-display" id="countdown" onclick="togglePause()" style="cursor: pointer;" title="Click to pause/unpause">60.0s (0/15)</div>
                     <div class="score-display">Correct: <span id="score">0</span></div>
                     <button class="help-btn" onclick="showHelp()">?</button>
                     <button class="new-game-btn" onclick="startNewGame()">New Game</button>
+                </div>
+            </div>
+            
+            <div id="difficulty-progress" class="difficulty-progress">
+                <div class="difficulty-badge" id="difficulty-badge">🟢 LEVEL 1</div>
+                <div class="streak-display">🔥 Streak: <span id="streak-count">0</span>/15</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
                 </div>
             </div>
 
@@ -492,6 +570,24 @@
     </div>
 
     <div id="copied-toast" class="copied-toast">Results copied to clipboard!</div>
+    
+    <!-- Level Transition Modal -->
+    <div id="level-complete-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="level-complete-title">🎉 PERFECT! 15/15! 🎉</h2>
+            <div id="level-complete-message"></div>
+            <button class="new-game-btn" onclick="continueToNextLevel()">Continue</button>
+        </div>
+    </div>
+    
+    <!-- Mistake Modal -->
+    <div id="mistake-modal" class="modal">
+        <div class="modal-content">
+            <h2>❌ Incorrect!</h2>
+            <div id="mistake-explanation"></div>
+            <button class="new-game-btn" onclick="restartCurrentLevel()">Try Again</button>
+        </div>
+    </div>
 
     <div id="help-modal" class="modal">
         <div class="modal-content">
@@ -563,6 +659,19 @@
         let currentScenarioIndex = 0;
         let totalHandsPlayed = 0;
         const MAX_HANDS = 15;
+        
+        // Timer pause state (for testing)
+        let isPaused = false;
+        let pausedElapsedTime = 0;
+        let pauseStartTime = null;
+        
+        // Difficulty progression state
+        let currentDifficulty = 'level1'; // 'level1', 'level2', 'level3'
+        let streakCount = 0; // Current streak in this difficulty
+        let completedLevels = new Set(); // Track completed difficulty levels
+        let attemptCounts = { level1: 0, level2: 0, level3: 0 }; // Track attempts per level
+        let bestStreaks = { level1: 0, level2: 0, level3: 0 }; // Best streak per difficulty
+        
         // Hand will be available globally from pokersolver
 
         // Card representations
@@ -858,6 +967,14 @@
             // Run test first (disabled for production)
             // testSpecificBoard();
             
+            // Initialize first attempt count
+            attemptCounts[currentDifficulty] = 1;
+            
+            // Reset pause state
+            isPaused = false;
+            pausedElapsedTime = 0;
+            pauseStartTime = null;
+            
             startNewGame();
         }
 
@@ -1137,6 +1254,194 @@
             
             return decoys;
         }
+        
+        // Generate hint text for Easy mode
+        function generateHintText(handDescription) {
+            // Extract the hand type from the description
+            if (handDescription.includes('Royal Flush')) return '(Makes: Royal Flush!)';
+            if (handDescription.includes('Straight Flush')) return '(Makes: Straight Flush!)';
+            if (handDescription.includes('Four of a Kind')) return '(Makes: Four of a Kind)';
+            if (handDescription.includes('Full House')) return '(Makes: Full House)';
+            if (handDescription.includes('Flush')) return '(Makes: Flush)';
+            if (handDescription.includes('Straight')) return '(Makes: Straight)';
+            if (handDescription.includes('Three of a Kind')) return '(Makes: Three of a Kind)';
+            if (handDescription.includes('Two Pair')) return '(Makes: Two Pair)';
+            if (handDescription.includes('Pair')) return '(Makes: One Pair)';
+            if (handDescription.includes('High Card')) return '(Makes: High Card)';
+            // Fallback - parse the hand type from description
+            const match = handDescription.match(/^([^,]+)/);
+            return match ? `(Makes: ${match[1]})` : '(Makes: This Hand)';
+        }
+        
+        // Difficulty-specific scenario generation
+        function generateLevel1Scenario() {
+            const deck = new Deck();
+            const communityCards = deck.draw(5);
+            const theNuts = findTheNuts(communityCards);
+            
+            // Generate choices with wide strength gaps
+            const choices = [];
+            const usedRanks = new Set();
+            
+            // Add the nuts with its hint
+            theNuts.hint = generateHintText(theNuts.description);
+            choices.push(theNuts);
+            usedRanks.add(theNuts.rank);
+            
+            // Add weak decoys for easy mode
+            const remainingDeck = deck.cards.filter(card => 
+                !communityCards.some(cc => cc.rank === card.rank && cc.suit === card.suit)
+            );
+            
+            // Try to add hands that are 3+ ranks apart
+            let attempts = 0;
+            while (choices.length < 4 && attempts < 50) {
+                attempts++;
+                const i = Math.floor(seededRandom() * remainingDeck.length);
+                let j = Math.floor(seededRandom() * remainingDeck.length);
+                while (j === i) {
+                    j = Math.floor(seededRandom() * remainingDeck.length);
+                }
+                
+                const holeCards = [remainingDeck[i], remainingDeck[j]];
+                const allCardStrings = [
+                    ...cardsToPokerSolverArray(communityCards),
+                    ...cardsToPokerSolverArray(holeCards)
+                ];
+                const hand = Hand.solve(allCardStrings);
+                
+                // Only add if rank difference is significant
+                const rankDiff = Math.abs(theNuts.rank - hand.rank);
+                if (rankDiff >= 3 || choices.length === 3) { // Accept any for last choice
+                    choices.push({
+                        description: formatHandDescription(hand.descr),
+                        holeCards: holeCards,
+                        rank: hand.rank,
+                        hint: generateHintText(formatHandDescription(hand.descr)) // Generate hint based on THIS hand
+                    });
+                }
+            }
+            
+            // Ensure we have 4 choices
+            while (choices.length < 4) {
+                const i = Math.floor(seededRandom() * remainingDeck.length);
+                const j = (i + 1) % remainingDeck.length;
+                const holeCards = [remainingDeck[i], remainingDeck[j]];
+                const allCardStrings = [
+                    ...cardsToPokerSolverArray(communityCards),
+                    ...cardsToPokerSolverArray(holeCards)
+                ];
+                const hand = Hand.solve(allCardStrings);
+                choices.push({
+                    description: formatHandDescription(hand.descr),
+                    holeCards: holeCards,
+                    rank: hand.rank,
+                    hint: generateHintText(formatHandDescription(hand.descr))
+                });
+            }
+            
+            const choicesArray = choices.slice(0, 4);
+            
+            // Shuffle choices
+            for (let i = choicesArray.length - 1; i > 0; i--) {
+                const j = Math.floor(seededRandom() * (i + 1));
+                [choicesArray[i], choicesArray[j]] = [choicesArray[j], choicesArray[i]];
+            }
+            
+            return {
+                communityCards,
+                choices: choicesArray,
+                answer: theNuts,
+                difficulty: 'level1'
+            };
+        }
+        
+        function generateLevel2Scenario() {
+            // Use current generateScenario logic for level 2
+            const scenario = generateScenario();
+            scenario.difficulty = 'level2';
+            return scenario;
+        }
+        
+        function generateLevel3Scenario() {
+            const deck = new Deck();
+            const communityCards = deck.draw(5);
+            const theNuts = findTheNuts(communityCards);
+            
+            // Generate choices with very close strength (within 1-2 ranks)
+            const choices = [];
+            choices.push(theNuts);
+            
+            // Analyze board for strategic hard mode decoys
+            const boardAnalysis = analyzeBoardTexture(communityCards);
+            
+            // Always try to include the exact second-best hand
+            const remainingDeck = deck.cards.filter(card => 
+                !communityCards.some(cc => cc.rank === card.rank && cc.suit === card.suit)
+            );
+            
+            // Find hands very close in strength
+            const nearNutsHands = [];
+            for (let i = 0; i < remainingDeck.length - 1; i++) {
+                for (let j = i + 1; j < remainingDeck.length; j++) {
+                    const holeCards = [remainingDeck[i], remainingDeck[j]];
+                    const allCardStrings = [
+                        ...cardsToPokerSolverArray(communityCards),
+                        ...cardsToPokerSolverArray(holeCards)
+                    ];
+                    const hand = Hand.solve(allCardStrings);
+                    
+                    // Only consider hands within 2 ranks of nuts
+                    if (Math.abs(hand.rank - theNuts.rank) <= 2 && hand.rank !== theNuts.rank) {
+                        nearNutsHands.push({
+                            description: formatHandDescription(hand.descr),
+                            holeCards: holeCards,
+                            rank: hand.rank
+                        });
+                    }
+                }
+            }
+            
+            // Sort by rank and take the closest ones
+            nearNutsHands.sort((a, b) => b.rank - a.rank);
+            
+            // Add the top 3 closest hands
+            for (let i = 0; i < Math.min(3, nearNutsHands.length); i++) {
+                choices.push(nearNutsHands[i]);
+            }
+            
+            // Ensure we have 4 choices
+            while (choices.length < 4) {
+                const i = Math.floor(seededRandom() * remainingDeck.length);
+                const j = (i + 1) % remainingDeck.length;
+                const holeCards = [remainingDeck[i], remainingDeck[j]];
+                const allCardStrings = [
+                    ...cardsToPokerSolverArray(communityCards),
+                    ...cardsToPokerSolverArray(holeCards)
+                ];
+                const hand = Hand.solve(allCardStrings);
+                choices.push({
+                    description: formatHandDescription(hand.descr),
+                    holeCards: holeCards,
+                    rank: hand.rank
+                });
+            }
+            
+            const choicesArray = choices.slice(0, 4);
+            
+            // Shuffle choices
+            for (let i = choicesArray.length - 1; i > 0; i--) {
+                const j = Math.floor(seededRandom() * (i + 1));
+                [choicesArray[i], choicesArray[j]] = [choicesArray[j], choicesArray[i]];
+            }
+            
+            return {
+                communityCards,
+                choices: choicesArray,
+                answer: theNuts,
+                difficulty: 'level3'
+            };
+        }
 
         function generateScenario() {
             const deck = new Deck();
@@ -1290,8 +1595,16 @@
             choices.forEach(choice => {
                 const button = document.createElement('button');
                 button.className = 'choice-btn';
-                // Display hole cards instead of hand description
-                button.innerHTML = formatHoleCardsForDisplay(choice.holeCards);
+                
+                // Display hole cards
+                let buttonHTML = formatHoleCardsForDisplay(choice.holeCards);
+                
+                // Add hint text for level 1
+                if (currentDifficulty === 'level1' && choice.hint) {
+                    buttonHTML += `<div class="hint-text">${choice.hint}</div>`;
+                }
+                
+                button.innerHTML = buttonHTML;
                 button.dataset.answer = JSON.stringify(choice); // Store full choice object
                 button.onclick = (e) => {
                     e.preventDefault();
@@ -1315,22 +1628,58 @@
         }
 
         function updateCountdown() {
-            if (gameStartTime) {
-                const elapsed = (Date.now() - gameStartTime) / 1000;
-                const remaining = Math.max(0, 60 - elapsed);
-                document.getElementById('countdown').textContent = `${remaining.toFixed(1)}s (${totalHandsPlayed}/${MAX_HANDS})`;
+            if (gameStartTime && !isPaused) {
+                const elapsed = ((Date.now() - gameStartTime) / 1000) + pausedElapsedTime;
+                // Different timer for level 3 (30s instead of 60s)
+                const maxTime = currentDifficulty === 'level3' ? 30 : 60;
+                const remaining = Math.max(0, maxTime - elapsed);
+                const pauseIndicator = isPaused ? ' ⏸' : '';
+                document.getElementById('countdown').textContent = `${remaining.toFixed(1)}s (${streakCount}/${MAX_HANDS})${pauseIndicator}`;
                 
                 if (remaining <= 0) {
-                    endGame();
+                    // Time out counts as a mistake
+                    handleMistake({ description: 'Time Out', holeCards: [] }, currentAnswer);
                 }
+            } else if (isPaused) {
+                // Update display to show paused state
+                const elapsed = ((pauseStartTime - gameStartTime) / 1000) + pausedElapsedTime;
+                const maxTime = currentDifficulty === 'level3' ? 30 : 60;
+                const remaining = Math.max(0, maxTime - elapsed);
+                document.getElementById('countdown').textContent = `${remaining.toFixed(1)}s (${streakCount}/${MAX_HANDS}) ⏸`;
             }
+        }
+        
+        function togglePause() {
+            if (!gameActive) return; // Only allow pause during active game
+            
+            const countdownEl = document.getElementById('countdown');
+            
+            if (isPaused) {
+                // Unpause
+                isPaused = false;
+                // Calculate how long we were paused and add to pausedElapsedTime
+                pausedElapsedTime += (Date.now() - pauseStartTime) / 1000;
+                // Reset game start time to account for the pause
+                gameStartTime = Date.now() - (pauseStartTime - gameStartTime);
+                pauseStartTime = null;
+                countdownEl.classList.remove('paused');
+            } else {
+                // Pause
+                isPaused = true;
+                pauseStartTime = Date.now();
+                countdownEl.classList.add('paused');
+            }
+            
+            // Update display immediately
+            updateCountdown();
         }
 
         function selectAnswer(choice) {
             if (!roundActive || !gameActive) return;
             
             roundActive = false;
-            totalHandsPlayed++;
+            
+            const isCorrect = choice.description === currentAnswer.description;
             
             const buttons = document.querySelectorAll('.choice-btn');
             buttons.forEach(btn => {
@@ -1351,21 +1700,28 @@
                 }
             });
             
-            if (choice.description === currentAnswer.description) {
+            if (isCorrect) {
+                // Correct answer - increment streak
+                streakCount++;
                 score++;
                 document.getElementById('score').textContent = score;
+                updateProgressDisplay();
             }
             
-            // Update the display to show hands played
-            updateCountdown();
+            // Always continue playing all 15 hands regardless of mistakes
+            totalHandsPlayed++;
             
-            // Check if game should end (hit max hands)
             if (totalHandsPlayed >= MAX_HANDS) {
+                // Completed all 15 hands - check if perfect
                 setTimeout(() => {
-                    endGame();
+                    if (streakCount >= MAX_HANDS) {
+                        handleLevelComplete();
+                    } else {
+                        handleLevelFailure();
+                    }
                 }, 1500);
             } else {
-                // Auto-advance to next round after a short delay
+                // Continue to next round
                 setTimeout(() => {
                     if (gameActive) {
                         nextRound();
@@ -1403,7 +1759,15 @@
             
             while (preGeneratedScenarios.length < count && attempts < MAX_ATTEMPTS) {
                 attempts++;
-                const scenario = generateScenario();
+                // Generate scenario based on current difficulty
+                let scenario;
+                if (currentDifficulty === 'level1') {
+                    scenario = generateLevel1Scenario();
+                } else if (currentDifficulty === 'level2') {
+                    scenario = generateLevel2Scenario();
+                } else {
+                    scenario = generateLevel3Scenario();
+                }
                 const handType = getHandTypeCategory(scenario.answer.description);
                 
                 // Track ALL generated types
@@ -1508,6 +1872,165 @@
             });
         }
 
+        // Handle level failure (didn't get 15/15)
+        function handleLevelFailure() {
+            gameActive = false;
+            
+            // Update best streak if current is better
+            if (streakCount > bestStreaks[currentDifficulty]) {
+                bestStreaks[currentDifficulty] = streakCount;
+            }
+            
+            const modal = document.getElementById('mistake-modal');
+            const explanation = document.getElementById('mistake-explanation');
+            
+            const levelName = currentDifficulty === 'level1' ? 'Level 1' : 
+                            currentDifficulty === 'level2' ? 'Level 2' : 'Level 3';
+            
+            explanation.innerHTML = `
+                <p><strong>${levelName} Complete</strong></p>
+                <p>Score: ${streakCount}/15 correct</p>
+                <br>
+                <p>You need 15/15 to advance to the next level.</p>
+                <p>Best streak: ${bestStreaks[currentDifficulty]}/15</p>
+                <br>
+                <p>Keep practicing! You're getting better!</p>
+            `;
+            
+            modal.style.display = 'block';
+        }
+        
+        // Handle successful level completion
+        function handleLevelComplete() {
+            gameActive = false;
+            completedLevels.add(currentDifficulty);
+            
+            const modal = document.getElementById('level-complete-modal');
+            const title = document.getElementById('level-complete-title');
+            const message = document.getElementById('level-complete-message');
+            
+            if (currentDifficulty === 'level1') {
+                title.innerHTML = '🎉 PERFECT! 15/15! 🎉';
+                message.innerHTML = `
+                    <p><strong>✅ LEVEL 1 COMPLETE</strong></p>
+                    <p>You've mastered the basics!</p>
+                    <p><strong>🔓 LEVEL 2 UNLOCKED</strong></p>
+                    <p>Ready for the next challenge? No more hints!</p>
+                `;
+            } else if (currentDifficulty === 'level2') {
+                title.innerHTML = '🎉 PERFECT! 15/15! 🎉';
+                message.innerHTML = `
+                    <p><strong>✅ LEVEL 2 COMPLETE</strong></p>
+                    <p>Great job! You're getting good at this!</p>
+                    <p><strong>🔓 LEVEL 3 UNLOCKED</strong></p>
+                    <p>Warning: Very challenging! Near-nuts hands only.</p>
+                `;
+            } else {
+                title.innerHTML = '🏆 PERFECT GAME! 🏆';
+                message.innerHTML = `
+                    <p><strong>✅ ALL LEVELS COMPLETE!</strong></p>
+                    <p>You got 45 hands in a row correct!</p>
+                    <p>You are a true poker master!</p>
+                    <p>Share your achievement!</p>
+                `;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        // Handle incorrect answer
+        function handleMistake(userChoice, correctAnswer) {
+            gameActive = false;
+            
+            // Update best streak if current is better
+            if (streakCount > bestStreaks[currentDifficulty]) {
+                bestStreaks[currentDifficulty] = streakCount;
+            }
+            
+            const modal = document.getElementById('mistake-modal');
+            const explanation = document.getElementById('mistake-explanation');
+            
+            let explanationHTML = '';
+            if (userChoice.description === 'Time Out') {
+                explanationHTML = `
+                    <p><strong>⏱️ Time's Up!</strong></p>
+                    <p>You ran out of time!</p>
+                    <br>
+                    <p><strong>The nuts was:</strong> ${formatHoleCardsForDisplay(correctAnswer.holeCards)}</p>
+                    <p>Which makes: ${formatHandForDisplay(correctAnswer.description)}</p>
+                `;
+            } else {
+                explanationHTML = `
+                    <p><strong>You had:</strong> ${formatHoleCardsForDisplay(userChoice.holeCards)}</p>
+                    <p>Which makes: ${formatHandForDisplay(userChoice.description)}</p>
+                    <br>
+                    <p><strong>The nuts was:</strong> ${formatHoleCardsForDisplay(correctAnswer.holeCards)}</p>
+                    <p>Which makes: ${formatHandForDisplay(correctAnswer.description)}</p>
+                `;
+            }
+            
+            explanationHTML += `
+                <br>
+                <p><strong>${getDifficultyBadge(currentDifficulty)} Progress:</strong> ${streakCount}/15</p>
+                <p>Best streak: ${bestStreaks[currentDifficulty]}/15</p>
+                <p>You must get 15 correct in a row to advance.</p>
+            `;
+            
+            explanation.innerHTML = explanationHTML;
+            
+            modal.style.display = 'block';
+        }
+        
+        // Continue to next level
+        function continueToNextLevel() {
+            const modal = document.getElementById('level-complete-modal');
+            modal.style.display = 'none';
+            
+            // Progress to next difficulty
+            if (currentDifficulty === 'level1') {
+                currentDifficulty = 'level2';
+            } else if (currentDifficulty === 'level2') {
+                currentDifficulty = 'level3';
+            } else {
+                // Game complete - show final results
+                endGame();
+                return;
+            }
+            
+            // Reset for new level
+            streakCount = 0;
+            attemptCounts[currentDifficulty]++;
+            startNewGame();
+        }
+        
+        // Restart current level after mistake
+        function restartCurrentLevel() {
+            const modal = document.getElementById('mistake-modal');
+            modal.style.display = 'none';
+            
+            // Reset streak but stay on same difficulty
+            streakCount = 0;
+            attemptCounts[currentDifficulty]++;
+            startNewGame();
+        }
+        
+        // Update progress display
+        function updateProgressDisplay() {
+            document.getElementById('difficulty-badge').innerHTML = getDifficultyBadge(currentDifficulty);
+            document.getElementById('streak-count').textContent = streakCount;
+            
+            const progressFill = document.getElementById('progress-fill');
+            const progressPercent = (streakCount / MAX_HANDS) * 100;
+            progressFill.style.width = progressPercent + '%';
+        }
+        
+        // Get difficulty badge with emoji
+        function getDifficultyBadge(difficulty) {
+            if (difficulty === 'level1') return '🟢 LEVEL 1';
+            if (difficulty === 'level2') return '🟡 LEVEL 2';
+            return '🔴 LEVEL 3';
+        }
+        
         function nextRound() {
             if (!gameActive) return;
             
@@ -1536,9 +2059,20 @@
         }
 
         function startNewGame() {
-            // Reset game state
-            score = 0;
-            totalHandsPlayed = 0;
+            // Don't reset streak if continuing same level
+            // Only reset if this is truly a new game (not continuing after mistake)
+            if (!gameActive) {
+                // This is a fresh start
+                score = 0;
+                totalHandsPlayed = 0;
+            }
+            
+            // Reset pause state
+            isPaused = false;
+            pausedElapsedTime = 0;
+            pauseStartTime = null;
+            document.getElementById('countdown').classList.remove('paused');
+            
             document.getElementById('score').textContent = score;
             document.getElementById('game-over').style.display = 'none';
             
@@ -1546,9 +2080,12 @@
             document.querySelector('.cards-area').style.display = 'block';
             document.getElementById('choices-area').style.display = 'block';
             
-            // Initialize seeded random with current hour's seed
-            const seed = getDailySeed();
+            // Initialize seeded random with current hour's seed + difficulty offset
+            const seed = getDailySeed() + (currentDifficulty === 'level1' ? 0 : currentDifficulty === 'level2' ? 1000 : 2000);
             seedRandom = mulberry32(seed);
+            
+            // Update progress display
+            updateProgressDisplay();
             
             // Pre-generate scenarios for consistent gameplay
             currentScenarioIndex = 0;
@@ -1568,12 +2105,32 @@
             const resultDiv = document.getElementById('game-over');
             const resultMessage = document.getElementById('result-message');
             
-            const winPercentage = Math.round((score / totalHandsPlayed) * 100);
+            // Build results message based on progress
+            let message = '';
+            if (completedLevels.has('level3')) {
+                message = `<strong>🏆 PERFECT GAME! 🏆</strong><br>
+                          You completed all 45 hands perfectly!<br>
+                          LEVEL 1 ✅ LEVEL 2 ✅ LEVEL 3 ✅<br>
+                          You are a true poker master!`;
+            } else if (completedLevels.has('level2')) {
+                message = `<strong>Great job!</strong><br>
+                          LEVEL 1 ✅ LEVEL 2 ✅<br>
+                          LEVEL 3: Best streak ${bestStreaks.level3}/15<br>
+                          Keep practicing to master Level 3!`;
+            } else if (completedLevels.has('level1')) {
+                message = `<strong>Good progress!</strong><br>
+                          LEVEL 1 ✅<br>
+                          LEVEL 2: Best streak ${bestStreaks.level2}/15<br>
+                          You're ready for the challenge!`;
+            } else {
+                message = `<strong>Keep practicing!</strong><br>
+                          LEVEL 1: Best streak ${bestStreaks.level1}/15<br>
+                          You need 15 perfect to unlock Level 2!<br>
+                          Don't give up!`;
+            }
             
-            resultMessage.innerHTML = `<strong>Final Score: ${score}/${totalHandsPlayed} correct (${winPercentage}%)</strong><br>
-                                      Completed ${totalHandsPlayed} of ${MAX_HANDS} hands<br>
-                                      Everyone playing this hour gets the same sequence of hands.<br>
-                                      Share your score and compete with friends!`;
+            message += `<br><br>Share your progress and compete with friends!`;
+            resultMessage.innerHTML = message;
             
             resultDiv.style.display = 'block';
             
@@ -1603,21 +2160,43 @@
         }
 
         function shareResults() {
-            const winPercentage = Math.round((score / totalHandsPlayed) * 100);
             const timeWindow = getTimeWindow();
+            let shareText = `🃏 The Nuts - Poker Challenge\n${timeWindow}\n\n`;
             
-            // Create bar chart visualization
-            const maxBars = 10;
-            const barsToFill = Math.round((score / totalHandsPlayed) * maxBars);
-            const barChart = '🟩'.repeat(barsToFill) + '⬜'.repeat(maxBars - barsToFill);
+            // Build share text based on progress
+            if (completedLevels.has('level3')) {
+                // Perfect game!
+                shareText += `🏆 PERFECT GAME! 🏆\n`;
+                shareText += `✅ LEVEL 1: 15/15\n`;
+                shareText += `✅ LEVEL 2: 15/15\n`;
+                shareText += `✅ LEVEL 3: 15/15\n`;
+                shareText += `\n45 PERFECT HANDS IN A ROW!\n`;
+                shareText += `Attempts: L1:${attemptCounts.level1}, L2:${attemptCounts.level2}, L3:${attemptCounts.level3}\n`;
+            } else if (completedLevels.has('level2')) {
+                // Completed level 2, working on level 3
+                shareText += `✅ LEVEL 1: PERFECT!\n`;
+                shareText += `✅ LEVEL 2: PERFECT!\n`;
+                shareText += `🔴 LEVEL 3: ${bestStreaks.level3}/15 (Best Streak)\n`;
+                shareText += `🔥 On fire! 30+ correct!\n`;
+            } else if (completedLevels.has('level1')) {
+                // Completed level 1, working on level 2
+                shareText += `✅ LEVEL 1: PERFECT!\n`;
+                shareText += `🟡 LEVEL 2: ${bestStreaks.level2}/15 (Best Streak)\n`;
+                shareText += `Still learning the advanced plays!\n`;
+            } else {
+                // Still on level 1
+                shareText += `🟢 LEVEL 1: ${bestStreaks.level1}/15 (Best Streak)\n`;
+                if (bestStreaks.level1 < 5) {
+                    shareText += `❌ Still learning the basics!\n`;
+                } else if (bestStreaks.level1 < 10) {
+                    shareText += `📈 Getting better!\n`;
+                } else {
+                    shareText += `🔥 Almost there!\n`;
+                }
+            }
             
-            const shareText = `🃏 The Nuts - Poker Challenge\n` +
-                            `${timeWindow}\n\n` +
-                            `${barChart}\n` +
-                            `${score}/${totalHandsPlayed} correct (${winPercentage}%)\n` +
-                            `Completed ${totalHandsPlayed}/${MAX_HANDS} hands\n\n` +
-                            `Can you beat my score?\n` +
-                            `Play at: ${window.location.href}`;
+            shareText += `\nCan you get 15 perfect?\n`;
+            shareText += `Play at: ${window.location.href}`;
             
             // Check if Web Share API is available (for mobile devices)
             if (navigator.share && /mobile|android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
