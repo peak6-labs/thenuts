@@ -4,11 +4,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-"The Nuts" is a single-page poker training web game where players identify the best possible poker hand (the nuts) given 5 community cards. The game features a progressive difficulty system with three levels that require perfect accuracy to advance.
+A suite of poker training games designed to teach players from basic hand recognition to expert-level play. The project aims to create a complete learning progression through multiple game levels, helping players build skills incrementally.
 
-## Current State (as of last update)
+### Current Games
+1. **index.html** - Main menu page linking to all available games
+2. **foundation-level.html** - "Talk the Talk" - Three foundation games for learning basic poker hands
+3. **the-nuts.html** - "The Nuts" - Advanced game identifying the best possible hand
 
-The game has been transformed from showing hand names to showing hole cards, making it more challenging and educational. Players must now understand poker hand rankings and visualize what hands the hole cards make.
+## Project Goals
+
+We're building a comprehensive poker training platform with 10 progressive games across 4 difficulty levels (see game-progression.md for full list). The goal is to take players from zero poker knowledge to expert-level board reading skills.
+
+### Implementation Status
+- ✅ Foundation Level (3/3 games complete in foundation-level.html)
+- ⏳ Beginner Level (0/3 games - focusing on community cards)
+- ⏳ Intermediate Level (0/3 games - opponent awareness)
+- ✅ Advanced Level (1/1 game complete in the-nuts.html)
+
+## Current State
+
+### Foundation Level Games (foundation-level.html)
+"Talk the Talk" - Learn the basic foundational lingo of poker
+- **Name That Hand** - 30 rounds identifying poker hands from 5 cards
+- **Hand vs Hand** - 10 rounds comparing which of two hands wins
+- **Best Five from Seven** - 10 rounds selecting best 5-card hand from 7 cards
+- Features high score tracking, mobile-friendly menu interface
+- No progression locks - all games immediately accessible
+
+### Advanced Level Game (the-nuts.html)
+"The Nuts" has been transformed from showing hand names to showing hole cards, making it more challenging and educational. Players must now understand poker hand rankings and visualize what hands the hole cards make.
 
 ### Key Features Implemented
 
@@ -32,7 +56,13 @@ The game has been transformed from showing hand names to showing hole cards, mak
 
 ## Architecture
 
-The entire application is contained in **index.html** (~2200 lines):
+### File Structure
+- **index.html** - Main menu page with links to all games
+- **foundation-level.html** - Contains all 3 foundation level games (~1500 lines)
+- **the-nuts.html** - The advanced nuts identification game (~2200 lines)
+- **game-progression.md** - Documentation of the full 10-game progression plan
+
+### the-nuts.html Architecture (~2200 lines):
 - **Lines 7-520**: CSS styles (responsive design, mobile-optimized, difficulty UI)
 - **Line 531**: External pokersolver library loaded from CDN
 - **Lines 534-650**: HTML structure (game container, modals, difficulty progress, controls)
@@ -84,9 +114,12 @@ let pauseStartTime = null;
 
 ## Development Setup
 
-The game has no build process or dependencies to install locally. Simply open `index.html` in a browser.
+The games have no build process or dependencies to install locally. Simply open files in a browser:
+- `index.html` - Main menu to access all games
+- `foundation-level.html` - Foundation level training games
+- `the-nuts.html` - The Nuts advanced game
 
-The pokersolver library (v2.1.4) is loaded from CDN and provides the `Hand` global object for poker hand evaluation.
+The pokersolver library (v2.1.4) is loaded from CDN (jsdelivr) and provides the `Hand` global object for poker hand evaluation.
 
 ## Code Conventions
 
@@ -98,9 +131,23 @@ The pokersolver library (v2.1.4) is loaded from CDN and provides the `Hand` glob
 
 ## Recent Changes
 
+### The Nuts Game
 - Transformed from showing hand names to showing hole cards
 - Added 3-level progression system with 100% accuracy requirement
 - Implemented pause/unpause functionality for testing
 - Changed from failing on first mistake to completing all 15 hands
 - Updated terminology from Easy/Medium/Hard to Level 1/2/3
 - Fixed Level 1 hints to show actual hand names for all choices
+
+### Foundation Level Games
+- Created foundation-level.html with 3 training games
+- Implemented "Talk the Talk" with Name That Hand, Hand vs Hand, and Best Five from Seven
+- Added high score tracking with localStorage
+- Made mobile-friendly with menu-first design
+- Removed progression locks for immediate accessibility
+- Changed to 30 rounds for Name That Hand with even distribution
+
+### Project Structure
+- Renamed index.html to the-nuts.html
+- Created new index.html as main menu hub
+- Added game-progression.md documenting the full 10-game plan

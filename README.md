@@ -4,7 +4,7 @@ A web-based poker training game that helps players practice identifying "the nut
 
 ## Play Now
 
-Open `index.html` in any modern web browser to play. No installation required.
+Open `index.html` in any modern web browser to access the game menu. No installation required.
 
 ## Game Features
 
@@ -58,7 +58,7 @@ The correct answer would be 10♥ 10♦ as it makes Four 10s, the best possible 
 
 ## Development
 
-Simply edit `index.html` and refresh your browser. The game uses:
+Simply edit `the-nuts.html` and refresh your browser. The game uses:
 - Mulberry32 PRNG with UTC hour-based seeds (offset per difficulty)
 - Exhaustive search algorithm to find the absolute nuts
 - Pokersolver's `Hand.solve()` and `Hand.winners()` methods
