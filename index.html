@@ -288,6 +288,11 @@
             align-items: center;
             z-index: 1000;
         }
+        
+        /* When modal is shown, use flex to center it */
+        .modal[style*="display: block"] {
+            display: flex !important;
+        }
 
         .modal.active {
             display: flex;
@@ -408,50 +413,37 @@
             opacity: 1;
         }
         
-        /* Difficulty Progress Styles */
-        .difficulty-progress {
-            background: linear-gradient(135deg, #F3E5F5, #FCE4EC);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 4px 15px rgba(107, 43, 158, 0.1);
+        /* Progress Dots Styles */
+        .progress-dots {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            justify-content: center;
+            gap: 4px;
+            padding: 10px 0;
+            margin-top: 5px;
         }
         
-        .difficulty-badge {
-            font-size: 20px;
-            font-weight: 700;
-            display: inline-block;
-        }
-        
-        .streak-display {
+        .progress-dots .dot {
             font-size: 18px;
-            font-weight: 600;
-            color: #6B2B9E;
+            line-height: 1;
+            transition: all 0.3s ease;
         }
         
-        .progress-bar {
-            width: 100%;
-            height: 25px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
+        .progress-dots .dot.correct {
+            color: #4CAF50;
         }
         
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #9C27B0, #AB47BC);
-            transition: width 0.5s ease;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 10px;
-            color: white;
-            font-weight: 600;
+        .progress-dots .dot.incorrect {
+            color: #f44336;
+        }
+        
+        @media (max-width: 480px) {
+            .progress-dots {
+                gap: 2px;
+            }
+            
+            .progress-dots .dot {
+                font-size: 16px;
+            }
         }
         
         .hint-text {
@@ -533,18 +525,27 @@
             <div class="header">
                 <h1 class="title">Find The Nuts!</h1>
                 <div class="controls">
-                    <div class="timer-display" id="countdown" onclick="togglePause()" style="cursor: pointer;" title="Click to pause/unpause">60.0s (0/15)</div>
+                    <div class="timer-display" id="countdown" onclick="togglePause()" style="cursor: pointer;" title="Click to pause/unpause">Level 1 • 60.0s</div>
                     <div class="score-display">Correct: <span id="score">0</span></div>
                     <button class="help-btn" onclick="showHelp()">?</button>
                     <button class="new-game-btn" onclick="startNewGame()">New Game</button>
                 </div>
-            </div>
-            
-            <div id="difficulty-progress" class="difficulty-progress">
-                <div class="difficulty-badge" id="difficulty-badge">🟢 LEVEL 1</div>
-                <div class="streak-display">🔥 Streak: <span id="streak-count">0</span>/15</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                <div class="progress-dots" id="progress-dots">
+                    <span class="dot" data-index="0">○</span>
+                    <span class="dot" data-index="1">○</span>
+                    <span class="dot" data-index="2">○</span>
+                    <span class="dot" data-index="3">○</span>
+                    <span class="dot" data-index="4">○</span>
+                    <span class="dot" data-index="5">○</span>
+                    <span class="dot" data-index="6">○</span>
+                    <span class="dot" data-index="7">○</span>
+                    <span class="dot" data-index="8">○</span>
+                    <span class="dot" data-index="9">○</span>
+                    <span class="dot" data-index="10">○</span>
+                    <span class="dot" data-index="11">○</span>
+                    <span class="dot" data-index="12">○</span>
+                    <span class="dot" data-index="13">○</span>
+                    <span class="dot" data-index="14">○</span>
                 </div>
             </div>
 
@@ -583,7 +584,7 @@
     <!-- Mistake Modal -->
     <div id="mistake-modal" class="modal">
         <div class="modal-content">
-            <h2>❌ Incorrect!</h2>
+            <h2 id="mistake-title">❌ Incorrect!</h2>
             <div id="mistake-explanation"></div>
             <button class="new-game-btn" onclick="restartCurrentLevel()">Try Again</button>
         </div>
@@ -667,7 +668,7 @@
         
         // Difficulty progression state
         let currentDifficulty = 'level1'; // 'level1', 'level2', 'level3'
-        let streakCount = 0; // Current streak in this difficulty
+        let streakCount = 0; // Current score/correct answers in this attempt
         let completedLevels = new Set(); // Track completed difficulty levels
         let attemptCounts = { level1: 0, level2: 0, level3: 0 }; // Track attempts per level
         let bestStreaks = { level1: 0, level2: 0, level3: 0 }; // Best streak per difficulty
@@ -1627,6 +1628,13 @@
             }
         }
 
+        function getLevelDisplayName() {
+            if (currentDifficulty === 'level1') return 'Level 1';
+            if (currentDifficulty === 'level2') return 'Level 2';
+            if (currentDifficulty === 'level3') return 'Level 3';
+            return 'Level 1';
+        }
+        
         function updateCountdown() {
             if (gameStartTime && !isPaused) {
                 const elapsed = ((Date.now() - gameStartTime) / 1000) + pausedElapsedTime;
@@ -1634,9 +1642,12 @@
                 const maxTime = currentDifficulty === 'level3' ? 30 : 60;
                 const remaining = Math.max(0, maxTime - elapsed);
                 const pauseIndicator = isPaused ? ' ⏸' : '';
-                document.getElementById('countdown').textContent = `${remaining.toFixed(1)}s (${streakCount}/${MAX_HANDS})${pauseIndicator}`;
+                const levelName = getLevelDisplayName();
+                document.getElementById('countdown').textContent = `${levelName} • ${remaining.toFixed(1)}s${pauseIndicator}`;
                 
                 if (remaining <= 0) {
+                    // Safeguard: Don't process timeout if game already ended
+                    if (!gameActive || totalHandsPlayed >= MAX_HANDS) return;
                     // Time out counts as a mistake
                     handleMistake({ description: 'Time Out', holeCards: [] }, currentAnswer);
                 }
@@ -1645,7 +1656,8 @@
                 const elapsed = ((pauseStartTime - gameStartTime) / 1000) + pausedElapsedTime;
                 const maxTime = currentDifficulty === 'level3' ? 30 : 60;
                 const remaining = Math.max(0, maxTime - elapsed);
-                document.getElementById('countdown').textContent = `${remaining.toFixed(1)}s (${streakCount}/${MAX_HANDS}) ⏸`;
+                const levelName = getLevelDisplayName();
+                document.getElementById('countdown').textContent = `${levelName} • ${remaining.toFixed(1)}s ⏸`;
             }
         }
         
@@ -1701,17 +1713,22 @@
             });
             
             if (isCorrect) {
-                // Correct answer - increment streak
+                // Correct answer - increment score
                 streakCount++;
                 score++;
                 document.getElementById('score').textContent = score;
-                updateProgressDisplay();
             }
             
             // Always continue playing all 15 hands regardless of mistakes
             totalHandsPlayed++;
             
+            // Update progress dots - pass whether this answer was correct
+            updateProgressDots(isCorrect);
+            
             if (totalHandsPlayed >= MAX_HANDS) {
+                // Stop timer immediately to prevent race condition
+                stopCountdown();
+                gameActive = false;
                 // Completed all 15 hands - check if perfect
                 setTimeout(() => {
                     if (streakCount >= MAX_HANDS) {
@@ -1875,8 +1892,9 @@
         // Handle level failure (didn't get 15/15)
         function handleLevelFailure() {
             gameActive = false;
+            currentAnswer = null; // Clear stale data
             
-            // Update best streak if current is better
+            // Update personal best if current is better
             if (streakCount > bestStreaks[currentDifficulty]) {
                 bestStreaks[currentDifficulty] = streakCount;
             }
@@ -1892,7 +1910,7 @@
                 <p>Score: ${streakCount}/15 correct</p>
                 <br>
                 <p>You need 15/15 to advance to the next level.</p>
-                <p>Best streak: ${bestStreaks[currentDifficulty]}/15</p>
+                <p>Personal best: ${bestStreaks[currentDifficulty]}/15</p>
                 <br>
                 <p>Keep practicing! You're getting better!</p>
             `;
@@ -1903,6 +1921,7 @@
         // Handle successful level completion
         function handleLevelComplete() {
             gameActive = false;
+            currentAnswer = null; // Clear stale data
             completedLevels.add(currentDifficulty);
             
             const modal = document.getElementById('level-complete-modal');
@@ -1941,25 +1960,39 @@
         // Handle incorrect answer
         function handleMistake(userChoice, correctAnswer) {
             gameActive = false;
+            currentAnswer = null; // Clear stale data
             
-            // Update best streak if current is better
+            // Mark all remaining dots as incorrect when timeout occurs
+            if (userChoice.description === 'Time Out') {
+                const dots = document.querySelectorAll('.progress-dots .dot');
+                for (let i = totalHandsPlayed; i < MAX_HANDS; i++) {
+                    if (dots[i]) {
+                        dots[i].textContent = '●';
+                        dots[i].classList.add('incorrect');
+                    }
+                }
+            }
+            
+            // Update personal best if current is better
             if (streakCount > bestStreaks[currentDifficulty]) {
                 bestStreaks[currentDifficulty] = streakCount;
             }
             
             const modal = document.getElementById('mistake-modal');
+            const modalTitle = document.getElementById('mistake-title');
             const explanation = document.getElementById('mistake-explanation');
             
             let explanationHTML = '';
             if (userChoice.description === 'Time Out') {
+                // Set timeout-specific title
+                modalTitle.innerHTML = '⏱️ Time\'s Up!';
                 explanationHTML = `
-                    <p><strong>⏱️ Time's Up!</strong></p>
                     <p>You ran out of time!</p>
-                    <br>
-                    <p><strong>The nuts was:</strong> ${formatHoleCardsForDisplay(correctAnswer.holeCards)}</p>
-                    <p>Which makes: ${formatHandForDisplay(correctAnswer.description)}</p>
                 `;
+                // Never show hand details for timeout - game is over
             } else {
+                // Set incorrect answer title
+                modalTitle.innerHTML = '❌ Incorrect!';
                 explanationHTML = `
                     <p><strong>You had:</strong> ${formatHoleCardsForDisplay(userChoice.holeCards)}</p>
                     <p>Which makes: ${formatHandForDisplay(userChoice.description)}</p>
@@ -1971,8 +2004,8 @@
             
             explanationHTML += `
                 <br>
-                <p><strong>${getDifficultyBadge(currentDifficulty)} Progress:</strong> ${streakCount}/15</p>
-                <p>Best streak: ${bestStreaks[currentDifficulty]}/15</p>
+                <p><strong>${getLevelDisplayName()} Score:</strong> ${streakCount}/15</p>
+                <p>Personal best: ${bestStreaks[currentDifficulty]}/15</p>
                 <p>You must get 15 correct in a row to advance.</p>
             `;
             
@@ -2014,21 +2047,20 @@
             startNewGame();
         }
         
-        // Update progress display
-        function updateProgressDisplay() {
-            document.getElementById('difficulty-badge').innerHTML = getDifficultyBadge(currentDifficulty);
-            document.getElementById('streak-count').textContent = streakCount;
-            
-            const progressFill = document.getElementById('progress-fill');
-            const progressPercent = (streakCount / MAX_HANDS) * 100;
-            progressFill.style.width = progressPercent + '%';
+        // Update progress dots display
+        function updateProgressDots(isCorrect) {
+            // Update the dot for the current hand (totalHandsPlayed - 1 because we just incremented it)
+            const dotIndex = totalHandsPlayed - 1;
+            const dots = document.querySelectorAll('.progress-dots .dot');
+            if (dots[dotIndex]) {
+                dots[dotIndex].textContent = '●';
+                dots[dotIndex].classList.add(isCorrect ? 'correct' : 'incorrect');
+            }
         }
         
-        // Get difficulty badge with emoji
-        function getDifficultyBadge(difficulty) {
-            if (difficulty === 'level1') return '🟢 LEVEL 1';
-            if (difficulty === 'level2') return '🟡 LEVEL 2';
-            return '🔴 LEVEL 3';
+        // Legacy function kept for compatibility
+        function updateProgressDisplay() {
+            // No longer needed as we update dots directly in selectAnswer
         }
         
         function nextRound() {
@@ -2059,13 +2091,10 @@
         }
 
         function startNewGame() {
-            // Don't reset streak if continuing same level
-            // Only reset if this is truly a new game (not continuing after mistake)
-            if (!gameActive) {
-                // This is a fresh start
-                score = 0;
-                totalHandsPlayed = 0;
-            }
+            // Always reset these for a new game
+            score = 0;
+            totalHandsPlayed = 0;
+            streakCount = 0;
             
             // Reset pause state
             isPaused = false;
@@ -2083,6 +2112,13 @@
             // Initialize seeded random with current hour's seed + difficulty offset
             const seed = getDailySeed() + (currentDifficulty === 'level1' ? 0 : currentDifficulty === 'level2' ? 1000 : 2000);
             seedRandom = mulberry32(seed);
+            
+            // Reset progress dots
+            const dots = document.querySelectorAll('.progress-dots .dot');
+            dots.forEach(dot => {
+                dot.textContent = '○';
+                dot.classList.remove('correct', 'incorrect');
+            });
             
             // Update progress display
             updateProgressDisplay();
