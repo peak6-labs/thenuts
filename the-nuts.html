@@ -14,7 +14,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #6B2B9E 0%, #9C27B0 50%, #CE93D8 100%);
+            background: linear-gradient(135deg, #7D1346 0%, #C73E9A 50%, #FF6EC7 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -28,7 +28,7 @@
             padding: 30px;
             max-width: 800px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(107, 43, 158, 0.3);
+            box-shadow: 0 20px 60px rgba(125, 19, 70, 0.3);
         }
 
         .header {
@@ -45,23 +45,23 @@
             top: 0;
             padding: 10px 20px;
             background: white;
-            border: 2px solid #667eea;
+            border: 2px solid #C73E9A;
             border-radius: 8px;
-            color: #667eea;
+            color: #C73E9A;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
         }
         
         .menu-button:hover {
-            background: #667eea;
+            background: #C73E9A;
             color: white;
         }
 
         .title {
             font-size: 32px;
             font-weight: 800;
-            color: #6B2B9E;
+            color: #7D1346;
             letter-spacing: -0.5px;
         }
 
@@ -72,7 +72,7 @@
         }
 
         .help-btn, .new-game-btn {
-            background: #9C27B0;
+            background: #C73E9A;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -81,13 +81,13 @@
             font-size: 14px;
             font-weight: 600;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+            box-shadow: 0 4px 15px rgba(199, 62, 154, 0.3);
         }
 
         .help-btn:hover, .new-game-btn:hover {
-            background: #7B1FA2;
+            background: #932153;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+            box-shadow: 0 6px 20px rgba(199, 62, 154, 0.4);
         }
 
         .help-btn {
@@ -99,13 +99,13 @@
             justify-content: center;
             font-size: 20px;
             border-radius: 50%;
-            background: #E1BEE7;
-            color: #6B2B9E;
-            box-shadow: 0 2px 8px rgba(107, 43, 158, 0.2);
+            background: #FFE0ED;
+            color: #7D1346;
+            box-shadow: 0 2px 8px rgba(125, 19, 70, 0.2);
         }
 
         .help-btn:hover {
-            background: #CE93D8;
+            background: #FF6EC7;
             color: white;
         }
 
@@ -137,9 +137,9 @@
         .score-display {
             font-size: 18px;
             font-weight: 600;
-            color: #6B2B9E;
+            color: #7D1346;
             margin-left: 15px;
-            background: #F3E5F5;
+            background: #FFF0F8;
             padding: 5px 15px;
             border-radius: 20px;
         }
@@ -150,7 +150,7 @@
 
         .section-label {
             font-size: 13px;
-            color: #9C27B0;
+            color: #C73E9A;
             margin-bottom: 15px;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -180,7 +180,7 @@
 
         .card:hover {
             transform: translateY(-8px) scale(1.05);
-            box-shadow: 0 8px 20px rgba(107, 43, 158, 0.25);
+            box-shadow: 0 8px 20px rgba(125, 19, 70, 0.25);
         }
 
         .card.red {
@@ -208,7 +208,7 @@
 
         .choice-btn {
             padding: 18px;
-            border: 2px solid #CE93D8;
+            border: 2px solid #FF6EC7;
             background: white;
             border-radius: 15px;
             cursor: pointer;
@@ -222,11 +222,11 @@
         /* Only apply hover on non-touch devices */
         @media (hover: hover) {
             .choice-btn:hover {
-                background: linear-gradient(135deg, #9C27B0, #AB47BC);
+                background: linear-gradient(135deg, #C73E9A, #FF6EC7);
                 color: white;
-                border-color: #9C27B0;
+                border-color: #C73E9A;
                 transform: translateY(-3px);
-                box-shadow: 0 6px 20px rgba(156, 39, 176, 0.3);
+                box-shadow: 0 6px 20px rgba(199, 62, 154, 0.3);
             }
         }
 
@@ -320,7 +320,7 @@
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(107, 43, 158, 0.3);
+            box-shadow: 0 20px 60px rgba(125, 19, 70, 0.3);
         }
 
         .modal-header {
@@ -332,7 +332,7 @@
 
         .modal-title {
             font-size: 28px;
-            color: #6B2B9E;
+            color: #7D1346;
             font-weight: 800;
         }
 
@@ -341,12 +341,12 @@
             border: none;
             font-size: 32px;
             cursor: pointer;
-            color: #CE93D8;
+            color: #FF6EC7;
             transition: color 0.3s;
         }
 
         .close-btn:hover {
-            color: #9C27B0;
+            color: #C73E9A;
         }
 
         .modal-body {
@@ -357,7 +357,7 @@
         .modal-body h3 {
             margin-top: 25px;
             margin-bottom: 12px;
-            color: #6B2B9E;
+            color: #7D1346;
             font-weight: 700;
         }
 
@@ -368,14 +368,14 @@
         .game-over {
             text-align: center;
             padding: 25px;
-            background: linear-gradient(135deg, #F3E5F5, #FCE4EC);
+            background: linear-gradient(135deg, #FFF0F8, #FFE0ED);
             border-radius: 15px;
             margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(107, 43, 158, 0.1);
+            box-shadow: 0 4px 15px rgba(125, 19, 70, 0.1);
         }
 
         .game-over h2 {
-            color: #6B2B9E;
+            color: #7D1346;
             margin-bottom: 15px;
             font-size: 28px;
             font-weight: 800;
@@ -411,7 +411,7 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(135deg, #6B2B9E, #9C27B0);
+            background: linear-gradient(135deg, #7D1346, #C73E9A);
             color: white;
             padding: 14px 28px;
             border-radius: 25px;
@@ -419,7 +419,7 @@
             transition: opacity 0.3s;
             pointer-events: none;
             z-index: 2000;
-            box-shadow: 0 6px 20px rgba(107, 43, 158, 0.4);
+            box-shadow: 0 6px 20px rgba(125, 19, 70, 0.4);
             font-weight: 600;
         }
 
