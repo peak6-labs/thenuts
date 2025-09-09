@@ -190,6 +190,14 @@
         .card.black {
             color: #424242;
         }
+        
+        /* Card image styling */
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
 
         .choices {
             display: grid;
@@ -1519,13 +1527,31 @@
         }
 
         function renderCard(card, container) {
-            const cardDiv = document.createElement('div');
-            cardDiv.className = `card ${card.isRed() ? 'red' : 'black'}`;
-            cardDiv.innerHTML = `
-                <div class="card-rank">${card.rank}</div>
-                <div class="card-suit">${card.suit}</div>
-            `;
-            container.appendChild(cardDiv);
+            // Convert Card object to Cards.js format
+            // The card object has suit as symbols (♠, ♥, ♦, ♣)
+            const suitMap = {
+                '♠': 's',
+                '♥': 'h',
+                '♦': 'd',
+                '♣': 'c'
+            };
+            const rankMap = {
+                '10': 'T',
+                'J': 'J',
+                'Q': 'Q',
+                'K': 'K',
+                'A': 'A'
+            };
+            const rank = rankMap[card.rank] || card.rank;
+            const suit = suitMap[card.suit];
+            const cardStr = `${rank}${suit}`;
+            
+            const cardElement = Cards.createCardElement(cardStr, {
+                width: 70,
+                height: 100,
+                fontSize: 24
+            });
+            container.appendChild(cardElement);
         }
 
         function renderCards(cards, containerId) {
@@ -2272,6 +2298,9 @@
                 closeHelp();
             }
         });
+        
+        // Initialize Cards library styles
+        Cards.injectDefaultStyles();
     </script>
 </body>
 </html>

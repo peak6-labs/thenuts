@@ -428,6 +428,14 @@
             transform: scale(1.05);
         }
 
+        /* Card image styling */
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
         .submit-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -663,7 +671,7 @@
                 ...cardOptions,
                 clickable: true,
                 onClick: () => toggleCardSelection(index),
-                selected: state.selectedCards.includes(index)
+                selected: gameStates.bestFive.selectedIndices.has(index)
             });
         }
 

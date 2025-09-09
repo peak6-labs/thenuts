@@ -30,9 +30,9 @@ const Cards = (function() {
 
     // Card rendering configuration
     let config = {
-        useImages: false,  // Future: switch to true when card images are available
-        imagePath: '/images/cards/',  // Future: path to card images
-        imageFormat: 'svg',  // Future: 'svg', 'png', etc.
+        useImages: true,  // Use card images for rendering
+        imagePath: 'images/cards/',  // Path to card images (relative)
+        imageFormat: 'png',  // Image format
         defaultWidth: 70,
         defaultHeight: 100,
         defaultFontSize: 24
