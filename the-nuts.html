@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Nuts - Poker Training Game</title>
+    <script src="cards.js"></script>
     <style>
         * {
             margin: 0;
@@ -35,6 +36,26 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 25px;
+            position: relative;
+        }
+        
+        .menu-button {
+            position: absolute;
+            left: 0;
+            top: 0;
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .menu-button:hover {
+            background: #667eea;
+            color: white;
         }
 
         .title {
@@ -144,6 +165,7 @@
             margin-bottom: 20px;
         }
 
+        /* Card styles enhanced by cards.js library */
         .card {
             width: 75px;
             height: 105px;
@@ -153,12 +175,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: white;
-            font-size: 24px;
-            font-weight: bold;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: transform 0.3s;
-            position: relative;
         }
 
         .card:hover {
@@ -172,17 +189,6 @@
 
         .card.black {
             color: #424242;
-        }
-
-        .card-rank {
-            font-size: 32px;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        .card-suit {
-            font-size: 28px;
-            margin-top: 2px;
         }
 
         .choices {
@@ -495,18 +501,7 @@
                 padding: 4px 10px;
             }
 
-            .card {
-                width: 60px;
-                height: 85px;
-            }
-
-            .card-rank {
-                font-size: 24px;
-            }
-
-            .card-suit {
-                font-size: 20px;
-            }
+            /* Mobile card sizing handled by cards.js */
 
             .choices {
                 grid-template-columns: 1fr;
@@ -523,6 +518,7 @@
         
         <div id="game-content" style="display: none;">
             <div class="header">
+                <button class="menu-button" onclick="window.location.href='index.html'">← Main Menu</button>
                 <h1 class="title">Find The Nuts!</h1>
                 <div class="controls">
                     <div class="timer-display" id="countdown" onclick="togglePause()" style="cursor: pointer;" title="Click to pause/unpause">Level 1 • 60.0s</div>
@@ -726,9 +722,14 @@
             }
 
             shuffle() {
-                for (let i = this.cards.length - 1; i > 0; i--) {
-                    const j = Math.floor(seededRandom() * (i + 1));
-                    [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+                // Use seeded shuffle if we have a seed
+                if (seedRandom) {
+                    for (let i = this.cards.length - 1; i > 0; i--) {
+                        const j = Math.floor(seedRandom() * (i + 1));
+                        [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+                    }
+                } else {
+                    Cards.shuffleArray(this.cards);
                 }
             }
 
@@ -743,16 +744,7 @@
             }
         }
 
-        // Seeded random number generator
-        function mulberry32(a) {
-            return function() {
-                let t = a += 0x6D2B79F5;
-                t = Math.imul(t ^ t >>> 15, t | 1);
-                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-                return ((t ^ t >>> 14) >>> 0) / 4294967296;
-            }
-        }
-
+        // Use cards library seeded random
         function seededRandom() {
             if (seedRandom) {
                 return seedRandom();
@@ -761,14 +753,8 @@
         }
 
         function getDailySeed() {
-            // Use current date (UTC) to hour precision for seed
-            // This gives everyone the same seed for each hour
-            const now = new Date();
-            const seed = now.getUTCFullYear() * 10000000 + 
-                        (now.getUTCMonth() + 1) * 100000 + 
-                        now.getUTCDate() * 1000 + 
-                        now.getUTCHours();
-            return seed;
+            // Use cards library for consistent hourly seed
+            return Cards.getHourlySeed();
         }
 
         function testPokerSolverUsage() {
@@ -1549,23 +1535,15 @@
         }
 
         function formatHandForDisplay(handDescription) {
-            // Convert card notation to symbols
-            // Only replace when it's actually a card notation (capital letter followed by lowercase suit)
-            // Use word boundaries to avoid replacing in the middle of words
-            let formatted = handDescription
-                // Replace card notations with colored spans - must be preceded by space, comma, or start of string
-                .replace(/(^|[, ])([2-9TJQKA]|10)s\b/g, '$1<span class="card-spade">$2♠</span>')  // Spades
-                .replace(/(^|[, ])([2-9TJQKA]|10)h\b/g, '$1<span class="card-heart">$2♥</span>')  // Hearts  
-                .replace(/(^|[, ])([2-9TJQKA]|10)d\b/g, '$1<span class="card-diamond">$2♦</span>')  // Diamonds
-                .replace(/(^|[, ])([2-9TJQKA]|10)c\b/g, '$1<span class="card-club">$2♣</span>')  // Clubs
-                // Handle "High" format (e.g., "Ah High")
-                .replace(/\b([2-9TJQKA])h High/g, '<span class="card-heart">$1♥</span> High')  // Hearts in "High" context
-                .replace(/\b([2-9TJQKA])s High/g, '<span class="card-spade">$1♠</span> High')  // Spades in "High" context
-                .replace(/\b([2-9TJQKA])d High/g, '<span class="card-diamond">$1♦</span> High')  // Diamonds in "High" context
-                .replace(/\b([2-9TJQKA])c High/g, '<span class="card-club">$1♣</span> High');  // Clubs in "High" context
+            // Use cards library for consistent card formatting
+            let formatted = Cards.formatCardsInText(handDescription);
             
-            // Replace T with 10 only when it's a card (now within the spans)
-            formatted = formatted.replace(/>T([♠♥♦♣])</g, '>10$1<');
+            // Handle "High" format (e.g., "Ah High")
+            formatted = formatted
+                .replace(/\b([2-9TJQKA])h High/g, '<span class="card-heart">$1♥</span> High')
+                .replace(/\b([2-9TJQKA])s High/g, '<span class="card-spade">$1♠</span> High')
+                .replace(/\b([2-9TJQKA])d High/g, '<span class="card-heart">$1♦</span> High')
+                .replace(/\b([2-9TJQKA])c High/g, '<span class="card-spade">$1♣</span> High');
             
             // Handle apostrophes in descriptions like "K's" -> "Ks"
             formatted = formatted.replace(/([2-9TJQKA10])['']s\b/g, '$1s');
@@ -1574,19 +1552,8 @@
         }
         
         function formatHoleCardsForDisplay(holeCards) {
-            // Format hole cards for display with colored suits
-            const card1 = holeCards[0];
-            const card2 = holeCards[1];
-            
-            function formatCard(card) {
-                const rank = card.rank === 'T' ? '10' : card.rank;
-                const suitClass = (card.suit === '♥' || card.suit === '♦') ? 
-                    (card.suit === '♥' ? 'card-heart' : 'card-diamond') : 
-                    (card.suit === '♠' ? 'card-spade' : 'card-club');
-                return `<span class="${suitClass}">${rank}${card.suit}</span>`;
-            }
-            
-            return `${formatCard(card1)} ${formatCard(card2)}`;
+            // Use cards library for consistent formatting
+            return Cards.formatHoleCards(holeCards, { colored: true });
         }
         
         function renderChoices(choices) {
@@ -2111,7 +2078,7 @@
             
             // Initialize seeded random with current hour's seed + difficulty offset
             const seed = getDailySeed() + (currentDifficulty === 'level1' ? 0 : currentDifficulty === 'level2' ? 1000 : 2000);
-            seedRandom = mulberry32(seed);
+            seedRandom = Cards.mulberry32(seed);
             
             // Reset progress dots
             const dots = document.querySelectorAll('.progress-dots .dot');

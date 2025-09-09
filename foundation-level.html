@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Talk the Talk - Learn Poker Lingo</title>
+    <script src="cards.js"></script>
     <style>
         * {
             margin: 0;
@@ -161,40 +162,11 @@
             to { opacity: 1; }
         }
 
+        /* Card styles now provided by cards.js library */
         .card {
             display: inline-block;
-            width: 70px;
-            height: 100px;
-            background: white;
-            border: 2px solid #333;
-            border-radius: 8px;
-            margin: 5px;
-            position: relative;
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
             line-height: 100px;
             cursor: pointer;
-            transition: transform 0.2s;
-            user-select: none;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card.selected {
-            border-color: #667eea;
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
-            transform: translateY(-10px);
-        }
-
-        .card.red {
-            color: #dc3545;
-        }
-
-        .card.black {
-            color: #000;
         }
 
         .card-container {
@@ -374,12 +346,7 @@
                 font-size: 2em;
             }
             
-            .card {
-                width: 60px;
-                height: 85px;
-                font-size: 20px;
-                line-height: 85px;
-            }
+            /* Mobile card sizing handled by cards.js */
             
             .game-button {
                 min-width: 150px;
@@ -472,6 +439,7 @@
         <!-- Main Menu -->
         <div class="menu-screen" id="menuScreen">
             <div class="header">
+                <button class="menu-button" onclick="window.location.href='index.html'">← Main Menu</button>
                 <h1>Talk the Talk</h1>
                 <p>Learn the basic foundational lingo of poker</p>
             </div>
@@ -678,46 +646,25 @@
             updateHighScoreDisplays();
         }
 
-        // Card creation helper
-        function createCardElement(card, clickable = false, index = null) {
-            const div = document.createElement('div');
-            div.className = 'card';
-            
-            const rank = card[0];
-            const suit = card[1];
-            
-            // Convert rank to display
-            const rankDisplay = rank === 'T' ? '10' : rank;
-            
-            // Add suit symbol and color
-            const suitSymbols = { 'h': '♥', 'd': '♦', 'c': '♣', 's': '♠' };
-            const suitColors = { 'h': 'red', 'd': 'red', 'c': 'black', 's': 'black' };
-            
-            div.textContent = rankDisplay + suitSymbols[suit];
-            div.classList.add(suitColors[suit]);
-            
-            if (clickable && index !== null) {
-                div.dataset.index = index;
-                div.onclick = () => toggleCardSelection(index);
-            }
-            
-            return div;
-        }
+        // Initialize cards library
+        Cards.injectDefaultStyles();
+        
+        // Mobile detection for card sizing
+        const isMobile = window.innerWidth <= 768;
+        const cardOptions = {
+            width: isMobile ? 60 : 70,
+            height: isMobile ? 85 : 100,
+            fontSize: isMobile ? 20 : 24
+        };
 
-
-        // Generate a deck
-        function generateDeck() {
-            const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
-            const suits = ['h', 'd', 'c', 's'];
-            const deck = [];
-            
-            for (const rank of ranks) {
-                for (const suit of suits) {
-                    deck.push(rank + suit);
-                }
-            }
-            
-            return deck;
+        // Helper to create clickable card for game 3
+        function createSelectableCard(card, index) {
+            return Cards.createCardElement(card, {
+                ...cardOptions,
+                clickable: true,
+                onClick: () => toggleCardSelection(index),
+                selected: state.selectedCards.includes(index)
+            });
         }
 
         // Get hand type name
@@ -929,7 +876,7 @@
             const container = document.getElementById('nameHandCards');
             container.innerHTML = '';
             hand.forEach(card => {
-                container.appendChild(createCardElement(card));
+                container.appendChild(Cards.createCardElement(card, cardOptions));
             });
             
             // Create choices
@@ -1021,14 +968,7 @@
             document.getElementById('handVsHandScore').textContent = state.score;
             
             // Generate two different hands using regular random
-            const deck = [];
-            const allCards = generateDeck();
-            // Shuffle using Math.random
-            for (let i = allCards.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
-            }
-            deck.push(...allCards);
+            const deck = Cards.generateDeck({ shuffled: true });
             const leftCards = deck.slice(0, 5);
             const rightCards = deck.slice(5, 10);
             
@@ -1039,14 +979,14 @@
             const leftContainer = document.getElementById('leftHandCards');
             leftContainer.innerHTML = '';
             leftCards.forEach(card => {
-                leftContainer.appendChild(createCardElement(card));
+                leftContainer.appendChild(Cards.createCardElement(card, cardOptions));
             });
             
             // Display right hand
             const rightContainer = document.getElementById('rightHandCards');
             rightContainer.innerHTML = '';
             rightCards.forEach(card => {
-                rightContainer.appendChild(createCardElement(card));
+                rightContainer.appendChild(Cards.createCardElement(card, cardOptions));
             });
             
             // Reset buttons
@@ -1156,20 +1096,14 @@
             document.getElementById('bestFiveScore').textContent = state.score;
             
             // Generate 7 cards (5 community + 2 hole) using regular random
-            const allCards = generateDeck();
-            // Shuffle using Math.random
-            for (let i = allCards.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
-            }
-            const deck = allCards;
+            const deck = Cards.generateDeck({ shuffled: true });
             state.allCards = deck.slice(0, 7);
             
             // Display community cards
             const communityContainer = document.getElementById('communityCards');
             communityContainer.innerHTML = '';
             for (let i = 0; i < 5; i++) {
-                const cardEl = createCardElement(state.allCards[i], true, i);
+                const cardEl = createSelectableCard(state.allCards[i], i);
                 communityContainer.appendChild(cardEl);
             }
             
@@ -1177,7 +1111,7 @@
             const holeContainer = document.getElementById('holeCards');
             holeContainer.innerHTML = '';
             for (let i = 5; i < 7; i++) {
-                const cardEl = createCardElement(state.allCards[i], true, i);
+                const cardEl = createSelectableCard(state.allCards[i], i);
                 holeContainer.appendChild(cardEl);
             }
             
@@ -1217,7 +1151,7 @@
                 const selectedContainer = document.getElementById('selectedCards');
                 selectedContainer.innerHTML = '';
                 [...state.selectedIndices].sort().forEach(idx => {
-                    selectedContainer.appendChild(createCardElement(state.allCards[idx]));
+                    selectedContainer.appendChild(Cards.createCardElement(state.allCards[idx], cardOptions));
                 });
             } else {
                 document.getElementById('selectedHandDisplay').style.display = 'none';
