@@ -287,8 +287,8 @@
   
   <!-- Main app script -->
   <script type="module">
-    import { initRouter, getRouter } from './src/lib/router.ts';
-    import { injectDefaultStyles as injectCardStyles } from './src/lib/cards.ts';
+    import { initRouter, getRouter } from './dist/lib/router.js';
+    import { injectDefaultStyles as injectCardStyles } from './dist/lib/cards.js';
     
     // Inject card styles globally
     injectCardStyles();
@@ -454,15 +454,15 @@
           let GameClass;
           switch (gameType) {
             case 'name-that-hand':
-              const { NameThatHand } = await import('./src/games/foundation/NameThatHand.ts');
+              const { NameThatHand } = await import('./dist/games/foundation/NameThatHand.js');
               GameClass = NameThatHand;
               break;
             case 'hand-vs-hand':
-              const { HandVsHand } = await import('./src/games/foundation/HandVsHand.ts');
+              const { HandVsHand } = await import('./dist/games/foundation/HandVsHand.js');
               GameClass = HandVsHand;
               break;
             case 'best-five':
-              const { BestFiveFromSeven } = await import('./src/games/foundation/BestFiveFromSeven.ts');
+              const { BestFiveFromSeven } = await import('./dist/games/foundation/BestFiveFromSeven.js');
               GameClass = BestFiveFromSeven;
               break;
             default:
@@ -553,7 +553,7 @@
           path: '/the-nuts',
           title: 'The Nuts - Advanced',
           loader: async () => {
-            const { TheNuts } = await import('./src/games/advanced/TheNuts.ts');
+            const { TheNuts } = await import('./dist/games/advanced/TheNuts.js');
             const game = new TheNuts();
             
             // Wrap the game to add back button

@@ -1,93 +1,108 @@
-# The Nuts - Poker Training Game
+# Poker Training Games
 
-A web-based poker training game that helps players practice identifying "the nuts" - the best possible poker hand given the community cards. Now featuring a progressive difficulty system that challenges players to truly understand poker hand strengths!
+A comprehensive poker training platform built as a Single Page Application with TypeScript. Features progressive difficulty levels from basic hand recognition to expert-level play.
 
 ## Play Now
 
-Open `index.html` in any modern web browser to access the game menu. No installation required.
+🎮 **Open `index.html` in any modern browser or visit [GitHub Pages deployment](https://yourusername.github.io/thenuts/)**
 
-## Game Features
+## Features
 
-### Progressive Difficulty System
-- **Level 1 (Learning Mode)**: Shows hole cards with hints indicating what hand each choice makes
-- **Level 2 (Standard Mode)**: Shows only hole cards, no hints - the classic challenge
-- **Level 3 (Expert Mode)**: Near-nuts hands only with 30-second timer - extremely challenging
+- 🎯 **Single Page Application** - Smooth navigation with state persistence
+- 🃏 **Professional Hand Evaluation** - Powered by pokersolver library
+- 📱 **Mobile Responsive** - Works on all devices
+- 💾 **Progress Tracking** - High scores and achievements saved locally
+- 🔄 **State Persistence** - Games survive page refreshes
+- ⚡ **TypeScript** - Type-safe development with ES modules
+- 🚀 **No Framework** - Vanilla TypeScript keeps it lightweight
 
-### Progression Requirements
-- Must achieve **15/15 perfect score** to advance to the next level
-- Track your best streaks and attempts per level
-- Educational approach - complete all 15 hands before seeing results
+## Game Progression
 
-### Core Gameplay
-- **Timed rounds** - 60 seconds for Level 1-2, 30 seconds for Level 3
-- **Synchronized gameplay** - All players worldwide get the same card sequence each hour (UTC) per level
-- **Competitive scoring** - Share and compare scores with friends
-- **Mobile-friendly** - Responsive design with native sharing on mobile devices
-- **Pause feature** - Click the timer to pause/unpause (for testing and learning)
+### 🎓 Foundation Level - "Talk the Talk"
+Learn the basic foundational lingo of poker:
+1. **Name That Hand** - Identify poker hands from 5 cards (30 rounds)
+2. **Hand vs Hand** - Compare which of two hands wins (10 rounds)
+3. **Best Five from Seven** - Select the best 5-card hand from 7 cards (10 rounds)
 
-## How to Play
+### 🎯 Beginner Level - "Community Cards" (Coming Soon)
+Understand how community cards work:
+- Complete the Hand
+- River Decisions
+- Reading the Board
 
-"The nuts" is the absolute best possible hand that ANY player could have given the 5 community cards on the board. You need to look at the hole card options and determine which ones would create the strongest possible hand.
+### 🧠 Intermediate Level - "Opponent Awareness" (Coming Soon)
+Learn to consider opponent hands:
+- Beat This Hand
+- Multiple Opponents
+- Danger Boards
 
-### Example
-If the board shows: 10♣ 10♠ 3♥ K♣ 8♥  
-And you see these hole card options:
-- 10♥ 10♦ (Makes: Four of a Kind - THE NUTS!)
-- K♥ K♦ (Makes: Full House)
-- A♣ 4♣ (Makes: Flush)
-- 3♣ 3♦ (Makes: Full House)
+### 🏆 Advanced Level - "The Nuts"
+The ultimate challenge with progressive difficulty:
+- **Level 1**: Practice mode with hints showing what each hand makes
+- **Level 2**: Standard difficulty with no hints
+- **Level 3**: Expert mode with close hand strengths and 30-second timer
+- Must achieve 15/15 correct to advance to the next level
 
-The correct answer would be 10♥ 10♦ as it makes Four 10s, the best possible hand.
+## Development Setup
 
-## What's New
+```bash
+# Install dependencies
+npm install
 
-### Recent Updates
-- **Hole Cards Display**: Game now shows hole cards instead of hand names for increased challenge
-- **3-Level Progression**: Master each level with perfect accuracy to advance
-- **Educational Hints**: Level 1 shows what each hand makes to help learning
-- **Pause/Unpause**: Click timer to pause for testing and practice
-- **Improved Feedback**: See exactly what hands were made after each round
+# Build TypeScript
+npm run build
 
-## Technical Details
+# Start development server
+npm run serve
 
-- Pure vanilla JavaScript, no framework dependencies
-- Uses pokersolver library (loaded from CDN) for hand evaluation
-- Seeded random number generator ensures consistent gameplay per hour/level
-- Fully client-side, no backend required
-- ~2200 lines of code in a single HTML file
+# Watch mode for development
+npm run watch
+```
 
-## Development
+Then open http://localhost:8000
 
-Simply edit `the-nuts.html` and refresh your browser. The game uses:
-- Mulberry32 PRNG with UTC hour-based seeds (offset per difficulty)
-- Exhaustive search algorithm to find the absolute nuts
-- Pokersolver's `Hand.solve()` and `Hand.winners()` methods
-- Strategic decoy generation based on board texture
-- Difficulty-specific scenario generation
+## Architecture
 
-### Key Functions
-- `findTheNuts()`: Returns best hand description and hole cards
-- `generateLevel1/2/3Scenario()`: Creates difficulty-specific challenges
-- `togglePause()`: Handles timer pause/resume functionality
-- `handleLevelComplete/Failure()`: Manages progression logic
+Built as a modern SPA with TypeScript:
 
-## Tips for Success
+```
+/src
+  /games         - Game implementations
+    /foundation  - Foundation level games
+    /advanced    - Advanced level games
+    BaseGame.ts  - Base class for all games
+  /lib          - Shared libraries
+    router.ts   - SPA routing with state persistence
+    cards.ts    - Card utilities and rendering
+    poker.ts    - Poker logic and hand evaluation
+  /components   - Reusable UI components
+    Modal.ts    - Game modals
+    Timer.ts    - Countdown timer with pause
+    ScoreDisplay.ts - Score tracking
+```
 
-### Level 1 (Learning)
-- Pay attention to the hints - they tell you exactly what each hand makes
-- Focus on learning hand rankings and recognizing patterns
-- Take your time - you have 60 seconds
+## Technical Features
 
-### Level 2 (Standard)
-- No more hints - you need to visualize what each hand makes
-- Think about all possible combinations
-- Remember: the nuts is the BEST possible hand anyone could have
+- **Hash-based routing** - Works on GitHub Pages (#/route)
+- **State persistence** - Games survive browser refresh
+- **Seeded random** - Consistent games worldwide per hour
+- **Professional evaluation** - Pokersolver library for accuracy
+- **Mobile optimized** - Touch-friendly with responsive design
+- **No backend** - Fully client-side application
 
-### Level 3 (Expert)
-- Very close hand strengths - often just one rank apart
-- Only 30 seconds - quick decision making required
-- Watch for subtle differences like kicker cards
+## Browser Compatibility
+
+Works on all modern browsers:
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+- Mobile browsers (iOS Safari, Chrome Mobile)
+
+## Contributing
+
+Feel free to fork and submit pull requests! The codebase is designed to be AI-friendly with clear TypeScript types and modular architecture.
 
 ## License
 
-Open source - feel free to fork and modify!
+Open source - MIT License
