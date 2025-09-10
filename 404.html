@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Poker Training Games</title>
+  <script>
+    // GitHub Pages SPA redirect for client-side routing
+    // This script takes the current location and replaces the path with a hash
+    const path = window.location.pathname;
+    const hash = path.replace(/^\/thenuts/, ''); // Remove base path
+    if (hash && hash !== '/') {
+      window.location.replace('/thenuts/#' + hash);
+    } else {
+      window.location.replace('/thenuts/');
+    }
+  </script>
+</head>
+<body>
+  <!-- This page handles SPA routing on GitHub Pages -->
+</body>
+</html>
