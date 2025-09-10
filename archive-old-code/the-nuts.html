@@ -669,6 +669,7 @@
         let isPaused = false;
         let pausedElapsedTime = 0;
         let pauseStartTime = null;
+        let elapsedAtPause = 0; // Track elapsed time when paused
         
         // Difficulty progression state
         let currentDifficulty = 'level1'; // 'level1', 'level2', 'level3'
@@ -969,6 +970,7 @@
             isPaused = false;
             pausedElapsedTime = 0;
             pauseStartTime = null;
+            elapsedAtPause = 0;
             
             startNewGame();
         }
@@ -1629,8 +1631,16 @@
         }
         
         function updateCountdown() {
-            if (gameStartTime && !isPaused) {
-                const elapsed = ((Date.now() - gameStartTime) / 1000) + pausedElapsedTime;
+            if (gameStartTime) {
+                let elapsed;
+                if (!isPaused) {
+                    // Game is running: current time minus start time, minus total paused time
+                    elapsed = ((Date.now() - gameStartTime) / 1000) - pausedElapsedTime;
+                } else {
+                    // Game is paused: use the elapsed time at the moment of pause
+                    elapsed = elapsedAtPause;
+                }
+                
                 // Different timer for level 3 (30s instead of 60s)
                 const maxTime = currentDifficulty === 'level3' ? 30 : 60;
                 const remaining = Math.max(0, maxTime - elapsed);
@@ -1638,19 +1648,12 @@
                 const levelName = getLevelDisplayName();
                 document.getElementById('countdown').textContent = `${levelName} • ${remaining.toFixed(1)}s${pauseIndicator}`;
                 
-                if (remaining <= 0) {
+                if (!isPaused && remaining <= 0) {
                     // Safeguard: Don't process timeout if game already ended
                     if (!gameActive || totalHandsPlayed >= MAX_HANDS) return;
                     // Time out counts as a mistake
                     handleMistake({ description: 'Time Out', holeCards: [] }, currentAnswer);
                 }
-            } else if (isPaused) {
-                // Update display to show paused state
-                const elapsed = ((pauseStartTime - gameStartTime) / 1000) + pausedElapsedTime;
-                const maxTime = currentDifficulty === 'level3' ? 30 : 60;
-                const remaining = Math.max(0, maxTime - elapsed);
-                const levelName = getLevelDisplayName();
-                document.getElementById('countdown').textContent = `${levelName} • ${remaining.toFixed(1)}s ⏸`;
             }
         }
         
@@ -1663,14 +1666,14 @@
                 // Unpause
                 isPaused = false;
                 // Calculate how long we were paused and add to pausedElapsedTime
-                pausedElapsedTime += (Date.now() - pauseStartTime) / 1000;
-                // Reset game start time to account for the pause
-                gameStartTime = Date.now() - (pauseStartTime - gameStartTime);
+                const pauseDuration = (Date.now() - pauseStartTime) / 1000;
+                pausedElapsedTime += pauseDuration;
                 pauseStartTime = null;
                 countdownEl.classList.remove('paused');
             } else {
-                // Pause
+                // Pause - save the current elapsed time
                 isPaused = true;
+                elapsedAtPause = ((Date.now() - gameStartTime) / 1000) - pausedElapsedTime;
                 pauseStartTime = Date.now();
                 countdownEl.classList.add('paused');
             }
@@ -2093,6 +2096,7 @@
             isPaused = false;
             pausedElapsedTime = 0;
             pauseStartTime = null;
+            elapsedAtPause = 0;
             document.getElementById('countdown').classList.remove('paused');
             
             document.getElementById('score').textContent = score;

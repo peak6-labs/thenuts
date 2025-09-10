@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poker Training Games - Learn Poker from Zero to Expert</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #7D1346 0%, #4a0e2d 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+      padding: 40px 20px;
+    }
+    
+    h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .subtitle {
+      font-size: 1.3em;
+      opacity: 0.95;
+    }
+    
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+      margin-bottom: 40px;
+    }
+    
+    .game-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    
+    .game-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    }
+    
+    .game-card.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .game-card.disabled:hover {
+      transform: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .level-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    
+    .foundation { background: #48bb78; color: white; }
+    .beginner { background: #4299e1; color: white; }
+    .intermediate { background: #ed8936; color: white; }
+    .advanced { background: #e53e3e; color: white; }
+    
+    .game-card h3 {
+      font-size: 1.4em;
+      margin-bottom: 10px;
+      color: #2d3748;
+    }
+    
+    .game-card p {
+      color: #4a5568;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+    
+    .game-stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+      color: #718096;
+      padding-top: 15px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .coming-soon {
+      background: #f7fafc;
+      border: 2px dashed #cbd5e0;
+      color: #a0aec0;
+      text-align: center;
+      padding: 40px;
+    }
+    
+    .architecture-info {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .architecture-info h2 {
+      margin-bottom: 10px;
+      font-size: 1.4em;
+    }
+    
+    .architecture-info p {
+      opacity: 0.9;
+      line-height: 1.6;
+    }
+    
+    footer {
+      text-align: center;
+      color: white;
+      opacity: 0.9;
+      padding: 20px;
+      margin-top: 40px;
+    }
+    
+    @media (max-width: 768px) {
+      h1 { font-size: 2em; }
+      .games-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🃏 Poker Training Games</h1>
+      <p class="subtitle">Master poker from basic hands to expert-level play</p>
+    </header>
+    
+    <div class="architecture-info">
+      <h2>✨ New Modular Architecture</h2>
+      <p>Refactored with TypeScript, reusable components, and professional poker evaluation via pokersolver library.</p>
+    </div>
+    
+    <div class="games-grid">
+      <!-- Foundation Level -->
+      <a href="foundation-new.html" class="game-card">
+        <span class="level-badge foundation">Foundation</span>
+        <h3>Talk the Talk</h3>
+        <p>Learn the basic foundational lingo of poker. Master hand rankings, comparisons, and selecting the best cards.</p>
+        <div class="game-stats">
+          <span>3 Games</span>
+          <span>50 Rounds Total</span>
+        </div>
+      </a>
+      
+      <!-- Beginner Level -->
+      <div class="game-card disabled">
+        <span class="level-badge beginner">Beginner</span>
+        <h3>Community Service</h3>
+        <p>Master community cards and board reading. Learn to identify possibilities and understand board texture.</p>
+        <div class="game-stats">
+          <span>3 Games</span>
+          <span>Coming Soon</span>
+        </div>
+      </div>
+      
+      <!-- Intermediate Level -->
+      <div class="game-card disabled">
+        <span class="level-badge intermediate">Intermediate</span>
+        <h3>Know Your Enemy</h3>
+        <p>Develop opponent awareness. Learn to track multiple hands and identify what opponents might have.</p>
+        <div class="game-stats">
+          <span>3 Games</span>
+          <span>Coming Soon</span>
+        </div>
+      </div>
+      
+      <!-- Advanced Level -->
+      <a href="the-nuts-new.html" class="game-card">
+        <span class="level-badge advanced">Advanced</span>
+        <h3>The Nuts</h3>
+        <p>Master expert-level board reading. Instantly identify the best possible hand for any board situation.</p>
+        <div class="game-stats">
+          <span>3 Difficulty Levels</span>
+          <span>15 Rounds Each</span>
+        </div>
+      </a>
+    </div>
+    
+    <footer>
+      <p>🎯 Start with Foundation level and work your way up to become a poker expert!</p>
+      <p style="margin-top: 10px; opacity: 0.7;">Built with TypeScript and modular architecture</p>
+    </footer>
+  </div>
+</body>
+</html>
