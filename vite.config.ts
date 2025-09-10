@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   root: '.',
-  base: './', // Important for GitHub Pages - use relative paths
+  base: '/thenuts/', // GitHub Pages project path
   publicDir: 'public',
   build: {
     outDir: 'dist',

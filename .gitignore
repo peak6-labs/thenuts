@@ -89,8 +89,8 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-# dist - we need this for GitHub Pages
-# dist
+# dist - now using gh-pages branch for deployment
+dist
 
 # Gatsby files
 .cache/
