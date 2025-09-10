@@ -24,8 +24,9 @@ export declare class BestFiveFromSeven extends BaseGame {
     protected handleAnswer(answerId: string): void;
     private showFeedback;
     protected renderGame(): void;
-    protected checkAnswer(_userAnswer: string, _correctAnswer: string): boolean;
-    protected handleAnswerFeedback(_isCorrect: boolean): void;
+    private addStyles;
+    protected checkAnswer(userAnswer: any, correctAnswer: any): boolean;
+    protected handleAnswerFeedback(isCorrect: boolean, _answer: any): void;
     getInstructions(): string;
 }
 export declare function getBestFiveStyles(): string;

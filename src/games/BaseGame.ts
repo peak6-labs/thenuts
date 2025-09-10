@@ -1,46 +1,36 @@
 /**
- * Base class for all poker training games
+ * Refactored Base Game Class
+ * Uses composition instead of inheritance for better modularity
+ * Reduced from 423 lines to ~200 lines
  */
 
 import type { IGame, GameConfig, GameState, GameResult, GameScenario } from '../types/games.js';
 import type { GameModule, GameState as RouterGameState } from '../types/router.js';
-import { Timer } from '../components/Timer.js';
-import { ScoreDisplay } from '../components/ScoreDisplay.js';
-import { Modal, injectModalStyles } from '../components/Modal.js';
-import { saveHighScore, isNewHighScore, incrementGamesPlayed } from '../lib/storage.js';
+import { GameStateManager } from '../lib/game-state-manager.js';
+import { GameResultsManager } from '../lib/game-results-manager.js';
+import { GameUIManager } from '../lib/game-ui-manager.js';
 import { getHourlySeed, setSeed, resetRandom } from '../lib/random.js';
-import { injectDefaultStyles as injectCardStyles } from '../lib/cards.js';
-import { injectGameStyles } from '../lib/theme.js';
 
 export abstract class BaseGame implements IGame, GameModule {
   config: GameConfig;
-  state: GameState;
+  protected stateManager: GameStateManager;
+  protected resultsManager: GameResultsManager;
+  protected uiManager: GameUIManager;
   
-  protected container: HTMLElement | null = null;
-  protected timer: Timer | null = null;
-  protected scoreDisplay: ScoreDisplay | null = null;
   protected currentScenario: GameScenario | null = null;
   protected scenarios: GameScenario[] = [];
-  protected answers: any[] = [];
-  protected startTime: number = 0;
+  protected container: HTMLElement | null = null;
   
   constructor(config: GameConfig) {
     this.config = config;
-    this.state = this.createInitialState();
+    this.stateManager = new GameStateManager(config);
+    this.resultsManager = new GameResultsManager(config.name);
+    this.uiManager = new GameUIManager(config);
   }
   
-  protected createInitialState(): GameState {
-    return {
-      currentRound: 0,
-      totalRounds: this.config.rounds,
-      score: 0,
-      streak: 0,
-      bestStreak: 0,
-      timeRemaining: this.config.timeLimit,
-      isComplete: false,
-      isPaused: false,
-      mistakes: 0
-    };
+  // Simplified public interface
+  get state(): GameState {
+    return this.stateManager.getState();
   }
   
   initialize(): void {
@@ -56,7 +46,8 @@ export abstract class BaseGame implements IGame, GameModule {
     // Reset random state
     resetRandom();
     
-    this.startTime = Date.now();
+    // Start tracking results
+    this.resultsManager.startTracking();
   }
   
   start(): void {
@@ -64,63 +55,40 @@ export abstract class BaseGame implements IGame, GameModule {
       this.initialize();
     }
     
-    this.state.isPaused = false;
-    
-    if (this.timer) {
-      this.timer.start();
-    }
-    
+    this.stateManager.resume();
+    this.uiManager.startTimer();
     this.nextRound();
   }
   
   pause(): void {
-    this.state.isPaused = true;
-    if (this.timer) {
-      this.timer.pause();
-    }
+    this.stateManager.pause();
+    this.uiManager.pauseTimer();
   }
   
   resume(): void {
-    this.state.isPaused = false;
-    if (this.timer) {
-      this.timer.resume();
-    }
+    this.stateManager.resume();
+    this.uiManager.resumeTimer();
   }
   
   reset(): void {
-    this.state = this.createInitialState();
-    this.answers = [];
+    this.stateManager.reset();
+    this.resultsManager.reset();
+    this.uiManager.resetTimer();
     this.currentScenario = null;
     this.scenarios = [];
-    
-    if (this.timer) {
-      this.timer.reset();
-    }
-    
-    if (this.scoreDisplay) {
-      this.scoreDisplay.reset();
-    }
-    
     this.initialize();
   }
   
   nextRound(): void {
-    if (this.state.currentRound >= this.state.totalRounds) {
+    if (!this.stateManager.nextRound()) {
       this.endGame();
       return;
     }
     
-    this.state.currentRound++;
-    this.currentScenario = this.scenarios[this.state.currentRound - 1];
+    const state = this.state;
+    this.currentScenario = this.scenarios[state.currentRound - 1];
     
-    if (this.scoreDisplay) {
-      this.scoreDisplay.update({
-        current: this.state.score,
-        total: this.state.totalRounds,
-        streak: this.state.streak
-      });
-    }
-    
+    this.uiManager.updateScore(state.score, state.totalRounds, state.streak);
     this.renderScenario();
   }
   
@@ -130,34 +98,25 @@ export abstract class BaseGame implements IGame, GameModule {
     }
     
     const isCorrect = this.checkAnswer(answer, this.currentScenario.correctAnswer);
+    const timeToAnswer = this.config.timeLimit ? 
+      this.config.timeLimit - this.uiManager.getTimerRemaining() : undefined;
     
-    this.answers.push({
-      answer,
-      isCorrect,
-      timestamp: Date.now(),
-      timeToAnswer: this.timer ? this.config.timeLimit! - this.timer.getRemaining() : undefined
-    });
+    // Record answer
+    this.resultsManager.recordAnswer(answer, isCorrect, timeToAnswer);
     
+    // Update state
     if (isCorrect) {
-      this.state.score++;
-      this.state.streak++;
-      this.state.bestStreak = Math.max(this.state.bestStreak, this.state.streak);
-      
-      if (this.scoreDisplay) {
-        this.scoreDisplay.incrementScore();
-      }
+      this.stateManager.incrementScore();
+      this.uiManager.incrementScore();
     } else {
-      this.state.streak = 0;
-      this.state.mistakes++;
-      
-      if (this.scoreDisplay) {
-        this.scoreDisplay.resetStreak();
-      }
+      this.stateManager.recordMistake();
+      this.uiManager.resetStreak();
     }
     
+    // Handle feedback
     this.handleAnswerFeedback(isCorrect, answer);
     
-    // Auto-advance after a delay
+    // Auto-advance
     setTimeout(() => {
       if (!this.state.isPaused && !this.state.isComplete) {
         this.nextRound();
@@ -168,86 +127,43 @@ export abstract class BaseGame implements IGame, GameModule {
   }
   
   protected endGame(): void {
-    this.state.isComplete = true;
+    this.stateManager.complete();
+    this.uiManager.stopTimer();
     
-    if (this.timer) {
-      this.timer.stop();
-    }
+    const state = this.state;
+    const result = this.resultsManager.calculateResult(state);
     
-    const result = this.getResult();
-    
-    // Save high score
-    if (isNewHighScore(this.config.name, result.score)) {
-      this.saveHighScore();
-    }
-    
-    // Update games played counter
-    incrementGamesPlayed(this.config.name);
+    // Save high score if applicable
+    this.resultsManager.saveIfHighScore(state);
+    this.resultsManager.recordGamePlayed();
     
     // Show results
-    this.showResults(result);
+    this.uiManager.showResults(
+      result,
+      () => {
+        this.reset();
+        this.start();
+      },
+      () => {
+        window.location.href = '/';
+      }
+    );
   }
   
   getResult(): GameResult {
-    const timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
-    
-    return {
-      score: this.state.score,
-      totalRounds: this.state.totalRounds,
-      accuracy: this.state.totalRounds > 0 ? this.state.score / this.state.totalRounds : 0,
-      timeElapsed,
-      bestStreak: this.state.bestStreak,
-      mistakes: this.state.mistakes
-    };
+    return this.resultsManager.calculateResult(this.state);
   }
   
   saveHighScore(): void {
-    const result = this.getResult();
-    
-    saveHighScore(this.config.name, {
-      game: this.config.name,
-      score: result.score,
-      accuracy: result.accuracy,
-      date: new Date().toISOString(),
-      timeElapsed: result.timeElapsed
-    });
-  }
-  
-  render(container: HTMLElement): void {
-    // Reset state for a fresh game
-    this.state = this.createInitialState();
-    this.scenarios = [];
-    this.answers = [];
-    this.currentScenario = null;
-    
-    this.container = container;
-    this.setupUI();
-    this.renderGame();
-  }
-  
-  destroy(): void {
-    if (this.timer) {
-      this.timer.destroy();
-      this.timer = null;
-    }
-    
-    if (this.scoreDisplay) {
-      this.scoreDisplay.destroy();
-      this.scoreDisplay = null;
-    }
-    
-    if (this.container) {
-      this.container.innerHTML = '';
-      this.container = null;
-    }
+    this.resultsManager.saveIfHighScore(this.state);
   }
   
   // GameModule interface implementation
   mount(container: HTMLElement, state?: RouterGameState): void {
+    this.container = container;
     this.render(container);
     
-    // If we have saved state, restore it after rendering
-    // But if the game was complete, don't restore - start fresh
+    // Restore state if available and game not complete
     if (state && state.gameState && !state.gameState.isComplete) {
       this.deserialize(state);
     }
@@ -257,26 +173,50 @@ export abstract class BaseGame implements IGame, GameModule {
     this.destroy();
   }
   
+  render(container: HTMLElement): void {
+    // Reset state for a fresh game
+    this.stateManager.reset();
+    this.resultsManager.reset();
+    this.scenarios = [];
+    this.currentScenario = null;
+    
+    // Setup UI
+    this.uiManager.setupUI(
+      container, 
+      this.state,
+      () => this.handleTimeUp()
+    );
+    
+    this.renderGame();
+  }
+  
+  destroy(): void {
+    this.uiManager.cleanup();
+    this.container = null;
+  }
+  
   serialize(): RouterGameState {
     return {
-      gameState: this.state,
+      gameState: this.stateManager.serialize(),
       currentRound: this.state.currentRound,
       score: this.state.score,
       streak: this.state.streak,
       bestStreak: this.state.bestStreak,
-      answers: this.answers,
       scenarios: this.scenarios,
       currentScenario: this.currentScenario,
-      startTime: this.startTime
+      ...this.resultsManager.serialize()
     };
   }
   
   deserialize(state: RouterGameState): void {
     if (state.gameState) {
-      this.state = state.gameState;
+      this.stateManager.deserialize(state.gameState);
     }
-    if (state.answers) {
-      this.answers = state.answers;
+    if (state.answers || state.startTime) {
+      this.resultsManager.deserialize({
+        answers: state.answers || [],
+        startTime: state.startTime || 0
+      });
     }
     if (state.scenarios) {
       this.scenarios = state.scenarios;
@@ -284,22 +224,17 @@ export abstract class BaseGame implements IGame, GameModule {
     if (state.currentScenario) {
       this.currentScenario = state.currentScenario;
     }
-    if (state.startTime) {
-      this.startTime = state.startTime;
-    }
     
     // Update UI to reflect restored state
-    if (this.scoreDisplay) {
-      this.scoreDisplay.update({
-        current: this.state.score,
-        total: this.state.totalRounds,
-        streak: this.state.streak
-      });
-    }
+    const currentState = this.state;
+    this.uiManager.updateScore(
+      currentState.score,
+      currentState.totalRounds,
+      currentState.streak
+    );
     
-    // Restore timer if needed
-    if (this.timer && this.state.timeRemaining) {
-      this.timer.setTimeRemaining(this.state.timeRemaining);
+    if (currentState.timeRemaining) {
+      this.uiManager.setTimerRemaining(currentState.timeRemaining);
     }
     
     // Re-render current scenario
@@ -308,101 +243,8 @@ export abstract class BaseGame implements IGame, GameModule {
     }
   }
   
-  protected setupUI(): void {
-    if (!this.container) return;
-    
-    // Inject all necessary styles
-    injectCardStyles();
-    injectModalStyles();
-    injectGameStyles();
-    
-    // Clear existing content first
-    this.container.innerHTML = '';
-    
-    // Clean up existing instances
-    if (this.timer) {
-      this.timer.destroy();
-      this.timer = null;
-    }
-    if (this.scoreDisplay) {
-      this.scoreDisplay.destroy();
-      this.scoreDisplay = null;
-    }
-    
-    // Create header with score and timer
-    const header = document.createElement('div');
-    header.className = 'game-header';
-    
-    // Add score display
-    this.scoreDisplay = new ScoreDisplay({
-      current: this.state.score,
-      total: this.state.totalRounds,
-      showStreak: true,
-      streak: this.state.streak
-    });
-    header.appendChild(this.scoreDisplay.getElement());
-    
-    // Add timer if time limit is set
-    if (this.config.timeLimit) {
-      this.timer = new Timer({
-        duration: this.config.timeLimit,
-        onComplete: () => this.handleTimeUp(),
-        allowPause: true
-      });
-      
-      const timerEl = document.createElement('div');
-      timerEl.id = 'game-timer';
-      timerEl.className = 'timer-display';
-      header.appendChild(timerEl);
-      
-      this.timer.attachTo(timerEl);
-    }
-    
-    this.container.appendChild(header);
-    
-    // Create game area
-    const gameArea = document.createElement('div');
-    gameArea.className = 'game-area';
-    gameArea.id = 'game-area';
-    this.container.appendChild(gameArea);
-  }
-  
   protected handleTimeUp(): void {
     this.endGame();
-  }
-  
-  protected showResults(result: GameResult): void {
-    const accuracyPercent = Math.round(result.accuracy * 100);
-    
-    const modal = new Modal({
-      title: 'Game Complete!',
-      content: `
-        <div class="results-content">
-          <h3>Score: ${result.score}/${result.totalRounds}</h3>
-          <p>Accuracy: ${accuracyPercent}%</p>
-          <p>Best Streak: ${result.bestStreak}</p>
-          ${result.timeElapsed ? `<p>Time: ${Math.floor(result.timeElapsed / 60)}:${(result.timeElapsed % 60).toString().padStart(2, '0')}</p>` : ''}
-        </div>
-      `,
-      buttons: [
-        {
-          text: 'Play Again',
-          onClick: () => {
-            this.reset();
-            this.start();
-          },
-          isPrimary: true
-        },
-        {
-          text: 'Main Menu',
-          onClick: () => {
-            window.location.href = '/';
-          }
-        }
-      ]
-    });
-    
-    modal.open();
   }
   
   // Abstract methods that must be implemented by subclasses
@@ -412,9 +254,9 @@ export abstract class BaseGame implements IGame, GameModule {
   protected abstract checkAnswer(answer: any, correctAnswer: any): boolean;
   protected abstract handleAnswerFeedback(isCorrect: boolean, answer: any): void;
   
-  // Optional methods that can be overridden
+  // Optional methods
   protected shouldUseSeed(): boolean {
-    return false; // Override if you want deterministic scenarios
+    return false;
   }
   
   protected getSeed(): number {

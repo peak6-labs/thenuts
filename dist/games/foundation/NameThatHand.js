@@ -83,9 +83,9 @@ export class NameThatHand extends BaseGame {
         return shuffleArray(choices);
     }
     renderScenario() {
-        if (!this.currentScenario || !this.container)
+        if (!this.currentScenario)
             return;
-        const gameArea = this.container.querySelector('#game-area');
+        const gameArea = this.uiManager.getGameArea();
         if (!gameArea)
             return;
         // Get the cards from the scenario
@@ -141,10 +141,11 @@ export class NameThatHand extends BaseGame {
         return answer === correctAnswer;
     }
     handleAnswerFeedback(isCorrect, answer) {
-        const feedback = this.container?.querySelector('#feedback');
+        const gameArea = this.uiManager.getGameArea();
+        const feedback = gameArea?.querySelector('#feedback');
         if (!feedback)
             return;
-        const choiceButtons = this.container?.querySelectorAll('.choice-btn');
+        const choiceButtons = gameArea?.querySelectorAll('.choice-btn');
         choiceButtons?.forEach(btn => {
             const button = btn;
             button.disabled = true;

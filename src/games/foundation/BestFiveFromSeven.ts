@@ -86,22 +86,14 @@ export class BestFiveFromSeven extends BaseGame {
   }
 
   protected renderScenario(): void {
-    const scenario = this.scenarios[this.state.currentRound || 0] as BestFiveScenario;
+    const scenario = this.scenarios[this.state.currentRound - 1] as BestFiveScenario;
     if (!scenario) return;
     
     this.currentScenario = scenario;
     this.selectedCards.clear();
     
-    const container = this.container;
-    if (!container) return;
-    
-    // Find or create game area
-    let gameArea = container.querySelector('.game-area') as HTMLElement;
-    if (!gameArea) {
-      gameArea = document.createElement('div');
-      gameArea.className = 'game-area';
-      container.appendChild(gameArea);
-    }
+    const gameArea = this.uiManager.getGameArea();
+    if (!gameArea) return;
     
     gameArea.innerHTML = `
       <div class="instructions">
@@ -216,36 +208,14 @@ export class BestFiveFromSeven extends BaseGame {
   }
 
   protected handleAnswer(answerId: string): void {
-    if (!this.currentScenario) return;
-    
-    const isCorrect = answerId === 'correct';
-    
-    // Update score
-    if (isCorrect) {
-      this.state.score++;
-      this.state.streak++;
-    } else {
-      this.state.streak = 0;
-    }
-    
-    // Show feedback
-    this.showFeedback(isCorrect);
-    
-    // Continue after delay
-    setTimeout(() => {
-      if (this.state.currentRound < this.config.rounds - 1) {
-        this.state.currentRound++;
-        this.renderScenario();
-      } else {
-        this.state.isComplete = true;
-      }
-    }, 3000);
+    // Use the base class submitAnswer method
+    this.submitAnswer(answerId);
   }
 
   private showFeedback(isCorrect: boolean): void {
     if (!this.currentScenario) return;
     
-    const gameArea = document.querySelector('.game-area');
+    const gameArea = this.uiManager.getGameArea();
     if (!gameArea) return;
     
     // Disable interaction
@@ -283,16 +253,29 @@ export class BestFiveFromSeven extends BaseGame {
   }
   
   protected renderGame(): void {
-    this.renderScenario();
+    // Add the BestFiveFromSeven specific styles
+    this.addStyles();
   }
   
-  protected checkAnswer(_userAnswer: string, _correctAnswer: string): boolean {
-    // Handled in handleAnswer
-    return false;
+  private addStyles(): void {
+    if (document.getElementById('best-five-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'best-five-styles';
+    style.textContent = getBestFiveStyles();
+    document.head.appendChild(style);
   }
   
-  protected handleAnswerFeedback(_isCorrect: boolean): void {
-    // Handled in showFeedback
+  protected checkAnswer(userAnswer: any, correctAnswer: any): boolean {
+    // Compare the selected cards with the best hand
+    if (typeof userAnswer === 'string' && userAnswer === 'correct') {
+      return true;
+    }
+    return userAnswer === correctAnswer;
+  }
+  
+  protected handleAnswerFeedback(isCorrect: boolean, _answer: any): void {
+    this.showFeedback(isCorrect);
   }
   
   getInstructions(): string {

@@ -102,21 +102,13 @@ export class HandVsHand extends BaseGame {
   }
 
   protected renderScenario(): void {
-    const scenario = this.scenarios[this.state.currentRound || 0] as HandVsHandScenario;
+    const scenario = this.scenarios[this.state.currentRound - 1] as HandVsHandScenario;
     if (!scenario) return;
     
     this.currentScenario = scenario;
     
-    const container = this.container;
-    if (!container) return;
-    
-    // Find or create game area
-    let gameArea = container.querySelector('.game-area') as HTMLElement;
-    if (!gameArea) {
-      gameArea = document.createElement('div');
-      gameArea.className = 'game-area';
-      container.appendChild(gameArea);
-    }
+    const gameArea = this.uiManager.getGameArea();
+    if (!gameArea) return;
     
     gameArea.innerHTML = `
       <div class="hands-comparison">
@@ -159,35 +151,12 @@ export class HandVsHand extends BaseGame {
   }
 
   protected handleAnswer(answerId: string): void {
-    if (!this.currentScenario) return;
-    
-    const scenario = this.currentScenario as unknown as HandVsHandScenario;
-    const isCorrect = answerId === scenario?.winner;
-    
-    // Update score
-    if (isCorrect) {
-      this.state.score++;
-      this.state.streak++;
-    } else {
-      this.state.streak = 0;
-    }
-    
-    // Show feedback
-    this.showFeedback(isCorrect, answerId, scenario?.winner || '', this.currentScenario?.explanation || '');
-    
-    // Continue after delay
-    setTimeout(() => {
-      if (this.state.currentRound < this.config.rounds - 1) {
-        this.state.currentRound++;
-        this.renderScenario();
-      } else {
-        this.state.isComplete = true;
-      }
-    }, 3000);
+    // Use the base class submitAnswer method
+    this.submitAnswer(answerId);
   }
 
   private showFeedback(isCorrect: boolean, selected: string, correct: string, explanation: string): void {
-    const gameArea = document.querySelector('.game-area');
+    const gameArea = this.uiManager.getGameArea();
     if (!gameArea) return;
     
     // Disable and style buttons
@@ -235,16 +204,28 @@ export class HandVsHand extends BaseGame {
   }
   
   protected renderGame(): void {
-    this.renderScenario();
+    // Add the HandVsHand specific styles
+    this.addStyles();
   }
   
-  protected checkAnswer(_userAnswer: string, _correctAnswer: string): boolean {
-    // Handled in handleAnswer
-    return false;
+  private addStyles(): void {
+    if (document.getElementById('hand-vs-hand-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'hand-vs-hand-styles';
+    style.textContent = getHandVsHandStyles();
+    document.head.appendChild(style);
   }
   
-  protected handleAnswerFeedback(_isCorrect: boolean): void {
-    // Handled in showFeedback
+  protected checkAnswer(userAnswer: any, correctAnswer: any): boolean {
+    return userAnswer === correctAnswer;
+  }
+  
+  protected handleAnswerFeedback(isCorrect: boolean, answer: any): void {
+    const scenario = this.currentScenario as unknown as HandVsHandScenario;
+    if (!scenario) return;
+    
+    this.showFeedback(isCorrect, answer, scenario.winner, scenario.explanation || '');
   }
   
   getInstructions(): string {

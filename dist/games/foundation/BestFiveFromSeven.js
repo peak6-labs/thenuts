@@ -62,21 +62,14 @@ export class BestFiveFromSeven extends BaseGame {
         return scenarios;
     }
     renderScenario() {
-        const scenario = this.scenarios[this.state.currentRound || 0];
+        const scenario = this.scenarios[this.state.currentRound - 1];
         if (!scenario)
             return;
         this.currentScenario = scenario;
         this.selectedCards.clear();
-        const container = this.container;
-        if (!container)
+        const gameArea = this.uiManager.getGameArea();
+        if (!gameArea)
             return;
-        // Find or create game area
-        let gameArea = container.querySelector('.game-area');
-        if (!gameArea) {
-            gameArea = document.createElement('div');
-            gameArea.className = 'game-area';
-            container.appendChild(gameArea);
-        }
         gameArea.innerHTML = `
       <div class="instructions">
         Select the best 5-card poker hand from these 7 cards
@@ -178,34 +171,13 @@ export class BestFiveFromSeven extends BaseGame {
         this.handleAnswer(isCorrect ? 'correct' : 'incorrect');
     }
     handleAnswer(answerId) {
-        if (!this.currentScenario)
-            return;
-        const isCorrect = answerId === 'correct';
-        // Update score
-        if (isCorrect) {
-            this.state.score++;
-            this.state.streak++;
-        }
-        else {
-            this.state.streak = 0;
-        }
-        // Show feedback
-        this.showFeedback(isCorrect);
-        // Continue after delay
-        setTimeout(() => {
-            if (this.state.currentRound < this.config.rounds - 1) {
-                this.state.currentRound++;
-                this.renderScenario();
-            }
-            else {
-                this.state.isComplete = true;
-            }
-        }, 3000);
+        // Use the base class submitAnswer method
+        this.submitAnswer(answerId);
     }
     showFeedback(isCorrect) {
         if (!this.currentScenario)
             return;
-        const gameArea = document.querySelector('.game-area');
+        const gameArea = this.uiManager.getGameArea();
         if (!gameArea)
             return;
         // Disable interaction
@@ -238,14 +210,26 @@ export class BestFiveFromSeven extends BaseGame {
         gameArea.appendChild(feedbackDiv);
     }
     renderGame() {
-        this.renderScenario();
+        // Add the BestFiveFromSeven specific styles
+        this.addStyles();
     }
-    checkAnswer(_userAnswer, _correctAnswer) {
-        // Handled in handleAnswer
-        return false;
+    addStyles() {
+        if (document.getElementById('best-five-styles'))
+            return;
+        const style = document.createElement('style');
+        style.id = 'best-five-styles';
+        style.textContent = getBestFiveStyles();
+        document.head.appendChild(style);
     }
-    handleAnswerFeedback(_isCorrect) {
-        // Handled in showFeedback
+    checkAnswer(userAnswer, correctAnswer) {
+        // Compare the selected cards with the best hand
+        if (typeof userAnswer === 'string' && userAnswer === 'correct') {
+            return true;
+        }
+        return userAnswer === correctAnswer;
+    }
+    handleAnswerFeedback(isCorrect, _answer) {
+        this.showFeedback(isCorrect);
     }
     getInstructions() {
         return "Select the best possible 5-card poker hand from the 7 cards shown. Click cards to select them.";

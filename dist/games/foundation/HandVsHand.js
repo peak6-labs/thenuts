@@ -79,20 +79,13 @@ export class HandVsHand extends BaseGame {
         return scenarios;
     }
     renderScenario() {
-        const scenario = this.scenarios[this.state.currentRound || 0];
+        const scenario = this.scenarios[this.state.currentRound - 1];
         if (!scenario)
             return;
         this.currentScenario = scenario;
-        const container = this.container;
-        if (!container)
+        const gameArea = this.uiManager.getGameArea();
+        if (!gameArea)
             return;
-        // Find or create game area
-        let gameArea = container.querySelector('.game-area');
-        if (!gameArea) {
-            gameArea = document.createElement('div');
-            gameArea.className = 'game-area';
-            container.appendChild(gameArea);
-        }
         gameArea.innerHTML = `
       <div class="hands-comparison">
         <div class="hand-display">
@@ -131,33 +124,11 @@ export class HandVsHand extends BaseGame {
         });
     }
     handleAnswer(answerId) {
-        if (!this.currentScenario)
-            return;
-        const scenario = this.currentScenario;
-        const isCorrect = answerId === scenario?.winner;
-        // Update score
-        if (isCorrect) {
-            this.state.score++;
-            this.state.streak++;
-        }
-        else {
-            this.state.streak = 0;
-        }
-        // Show feedback
-        this.showFeedback(isCorrect, answerId, scenario?.winner || '', this.currentScenario?.explanation || '');
-        // Continue after delay
-        setTimeout(() => {
-            if (this.state.currentRound < this.config.rounds - 1) {
-                this.state.currentRound++;
-                this.renderScenario();
-            }
-            else {
-                this.state.isComplete = true;
-            }
-        }, 3000);
+        // Use the base class submitAnswer method
+        this.submitAnswer(answerId);
     }
     showFeedback(isCorrect, selected, correct, explanation) {
-        const gameArea = document.querySelector('.game-area');
+        const gameArea = this.uiManager.getGameArea();
         if (!gameArea)
             return;
         // Disable and style buttons
@@ -201,14 +172,25 @@ export class HandVsHand extends BaseGame {
         }
     }
     renderGame() {
-        this.renderScenario();
+        // Add the HandVsHand specific styles
+        this.addStyles();
     }
-    checkAnswer(_userAnswer, _correctAnswer) {
-        // Handled in handleAnswer
-        return false;
+    addStyles() {
+        if (document.getElementById('hand-vs-hand-styles'))
+            return;
+        const style = document.createElement('style');
+        style.id = 'hand-vs-hand-styles';
+        style.textContent = getHandVsHandStyles();
+        document.head.appendChild(style);
     }
-    handleAnswerFeedback(_isCorrect) {
-        // Handled in showFeedback
+    checkAnswer(userAnswer, correctAnswer) {
+        return userAnswer === correctAnswer;
+    }
+    handleAnswerFeedback(isCorrect, answer) {
+        const scenario = this.currentScenario;
+        if (!scenario)
+            return;
+        this.showFeedback(isCorrect, answer, scenario.winner, scenario.explanation || '');
     }
     getInstructions() {
         return "Compare two poker hands and determine which one wins. Remember the hand rankings!";

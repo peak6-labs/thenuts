@@ -326,12 +326,11 @@ export class TheNuts extends BaseGame {
   
   protected renderScenario(): void {
     
-    if (!this.currentScenario || !this.container) return;
+    if (!this.currentScenario) return;
     
-    const gameArea = this.container.querySelector('#game-area');
+    const gameArea = this.uiManager.getGameArea();
     if (!gameArea) {
-      console.error('Game area not found in container');
-      console.log('Container contents:', this.container.innerHTML);
+      console.error('Game area not found');
       return;
     }
     
@@ -402,7 +401,8 @@ export class TheNuts extends BaseGame {
   }
   
   protected handleAnswerFeedback(isCorrect: boolean, _answer: any): void {
-    const buttons = this.container?.querySelectorAll('.hole-cards-btn');
+    const gameArea = this.uiManager.getGameArea();
+    const buttons = gameArea?.querySelectorAll('.hole-cards-btn');
     buttons?.forEach(btn => {
       const button = btn as HTMLButtonElement;
       button.disabled = true;
@@ -419,7 +419,6 @@ export class TheNuts extends BaseGame {
     }
     
     // Show feedback - look in game-area since that's where it's rendered
-    const gameArea = this.container?.querySelector('#game-area');
     const feedback = gameArea?.querySelector('#feedback') as HTMLElement;
     
     if (feedback) {
